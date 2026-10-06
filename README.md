@@ -63,7 +63,7 @@ Note:
 public/               frontend (index.html, css/, js/)  — servit static
 public/js/lessons.js  lecțiile   ·   public/js/data.js  întrebările și baza tutorului
 lib/core.js           tot API-ul (conturi, clase, teme, AI, dueluri) + schema bazei de date
-api/[...path].js      intrarea serverless pentru Vercel
+api/index.js          intrarea serverless pentru Vercel (toate /api/* sunt redirecționate aici din vercel.json)
 server/server.js      server local (static + același API)
 server/test.js        teste de integrare   ·   server/bot.js  adversar de test pentru dueluri
 vercel.json           configurare Vercel
