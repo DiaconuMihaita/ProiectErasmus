@@ -104,6 +104,11 @@
     const tk = ticker.map(t => `<span>${esc(t)}</span>`).join('');
     $('#v-home').innerHTML = `
       <div class="hero">
+        <div class="floaties" aria-hidden="true">
+          <span style="--x:72%;--y:2%;--s:130px;--t:8s">∑</span><span style="--x:88%;--y:34%;--s:100px;--t:11s;--d:-3s">π</span>
+          <span style="--x:58%;--y:58%;--s:90px;--t:9s;--d:-5s">√</span><span style="--x:80%;--y:72%;--s:120px;--t:12s;--d:-2s">Δ</span>
+          <span style="--x:64%;--y:-3%;--s:70px;--t:10s;--d:-6s">∞</span><span style="--x:95%;--y:8%;--s:80px;--t:7s;--d:-1s">{ }</span>
+        </div>
         <span class="eyebrow">Liceul Teoretic „Emil Racoviță” Vaslui · clasa a IX-a</span>
         <h1><span>Învață.</span><span class="out">Întreabă.</span><span><i class="hl" style="font-style:normal">Învinge.</i></span></h1>
         <div class="hero-row">

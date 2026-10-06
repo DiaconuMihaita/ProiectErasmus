@@ -473,3 +473,92 @@ textarea { font: inherit; padding: 11px 14px; border-radius: 12px; border: 1px s
 .b-arena { background: #11110e !important; color: #f0eee6; }
 .online { background: #11110e !important; color: #f0eee6; }
 .ro.pick:has(input:checked) span { color: var(--bg); opacity: .7; }
+
+/* ================= animații ================= */
+/* apariție la scroll (clasele sunt puse de fx.js și scoase după ce se termină) */
+.rv { opacity: 0; transform: translateY(26px) scale(.985); }
+.rv.in { opacity: 1; transform: none; transition: opacity .7s cubic-bezier(.2, .7, .2, 1), transform .7s cubic-bezier(.2, .7, .2, 1); }
+
+/* hero: intrare pe rând */
+.hero h1 span { animation: lineIn .9s cubic-bezier(.2, .8, .2, 1) both; }
+.hero h1 span:nth-child(1) { animation-delay: .05s; }
+.hero h1 span:nth-child(2) { animation-delay: .17s; }
+.hero h1 span:nth-child(3) { animation-delay: .29s; }
+.hero h1 .hl { animation: hlIn 1s cubic-bezier(.3, 1.4, .5, 1) .55s both; }
+.hero > .eyebrow { animation: fadeUp .7s ease both; }
+.hero .lead { animation: fadeUp .8s ease .45s both; }
+.hero .cta { animation: fadeUp .8s ease .6s both; }
+@keyframes lineIn { from { opacity: 0; transform: translateY(60%) skewY(4deg); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes hlIn { from { opacity: 0; transform: scale(.7) rotate(-8deg); } to { opacity: 1; transform: rotate(-1.5deg); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* simboluri matematice care plutesc în hero */
+.hero { position: relative; }
+.floaties { position: absolute; inset: -20px 0 0; pointer-events: none; z-index: -1; overflow: visible; }
+.floaties span { position: absolute; left: var(--x); top: var(--y); font: 700 var(--s, 90px)/1 var(--display); color: var(--ink); opacity: .07; animation: floaty var(--t, 9s) ease-in-out var(--d, 0s) infinite alternate; will-change: transform; }
+@keyframes floaty { from { transform: translate3d(0, 0, 0) rotate(-6deg); } to { transform: translate3d(14px, -26px, 0) rotate(8deg); } }
+
+/* meniu: pastila care alunecă */
+.nav-links { position: relative; }
+.nav-pill { position: absolute; top: 0; left: 0; border-radius: 999px; background: var(--ink); z-index: 0; pointer-events: none;
+  transition: transform .5s cubic-bezier(.3, 1.25, .5, 1), width .5s cubic-bezier(.3, 1.25, .5, 1), height .3s, opacity .3s; }
+.nav-links a { position: relative; z-index: 1; }
+.has-pill .nav-links a[aria-current="page"], .nav-links.has-pill a[aria-current="page"] { background: transparent; color: var(--bg); }
+.nav-links:has(.nav-pill) a[aria-current="page"] { background: transparent; color: var(--bg); }
+
+/* butoane */
+.btn svg { transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
+.btn:hover svg { transform: translate(3px, -3px); }
+.btn.lime { position: relative; overflow: hidden; }
+.btn.lime::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .55) 50%, transparent 70%); transform: translateX(-120%); }
+.btn.lime:hover::after { transform: translateX(120%); transition: transform .7s ease; }
+
+/* lumină care urmărește cursorul (în fundalul cardului, ca să nu atingă conținutul) */
+.card, .class-card, .lesson { --mx: 50%; --my: 50%; }
+.card, .lesson { background-image: radial-gradient(380px circle at var(--mx) var(--my), var(--glow, transparent), transparent 62%); }
+.card:hover, .lesson:hover { --glow: color-mix(in srgb, var(--lime) 24%, transparent); }
+.online, .b-arena { background-image: radial-gradient(380px circle at var(--mx) var(--my), var(--glow, transparent), transparent 62%) !important; }
+.online:hover, .b-arena:hover { --glow: rgba(210, 245, 60, .2); }
+
+/* progres: barele cresc din stânga */
+.prog > i, .bar i { transform-origin: left center; animation: grow 1.1s cubic-bezier(.2, .7, .2, 1) .15s both; }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* lecții */
+.lesson[open] .lesson-body { animation: fadeUp .45s cubic-bezier(.2, .7, .2, 1) both; }
+.lesson .tick { transition: transform .3s cubic-bezier(.3, 1.6, .5, 1), background .2s; }
+.lesson.done .tick { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+.lesson summary:hover .num { transform: translateX(4px); }
+.lesson .num { transition: transform .25s; }
+@keyframes pop { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+
+/* arenă */
+.ans.right { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+.ans.wrong { animation: shake .45s ease; }
+.ans.picked { animation: pick .25s ease; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+@keyframes pick { from { transform: scale(.97); } to { transform: scale(1); } }
+.ring.low b { animation: tick 1s ease-in-out infinite; color: var(--bad); }
+@keyframes tick { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+.pl.lead-p { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+.result h2 { animation: lineIn .9s cubic-bezier(.2, .8, .2, 1) both; }
+.result .final > div { animation: fadeUp .7s ease both; }
+.result .final > div:nth-child(2) { animation-delay: .15s; }
+.result .win b { animation: hlIn .9s cubic-bezier(.3, 1.4, .5, 1) .4s both; }
+
+/* chat */
+.mini-chat div { animation: fadeUp .6s ease both; }
+.mini-chat div:nth-child(1) { animation-delay: .3s; } .mini-chat div:nth-child(2) { animation-delay: 1s; }
+.badge.on i { animation: pop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+.glyphs { animation: floaty 10s ease-in-out infinite alternate; }
+
+/* confetti */
+.confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 90; }
+
+/* ticker: se oprește când treci cu mouse-ul */
+.ticker:hover .ticker-track { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rv { opacity: 1; transform: none; }
+  .floaties, .confetti { display: none; }
+}
