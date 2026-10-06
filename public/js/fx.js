@@ -67,14 +67,42 @@
     placePill();
   }
 
-  /* ---------- lumină care urmărește mouse-ul pe carduri ---------- */
-  if (!reduce && matchMedia('(hover: hover)').matches) {
+  /* ---------- carduri 3D, butoane magnetice, parallax ---------- */
+  const fine = !reduce && matchMedia('(hover: hover)').matches;
+  if (fine) {
+    const TILT = '.bento a.card, .class-card';
+    const MAG = '.hero .btn, .cta .btn';
+    let magEl = null;
     document.addEventListener('pointermove', e => {
-      const c = e.target.closest && e.target.closest('.card, .class-card, .lesson');
-      if (!c) return;
-      const r = c.getBoundingClientRect();
-      c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+      const t = e.target.closest && e.target.closest(TILT);
+      if (t) {
+        const r = t.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+        t.classList.add('tilting');
+        t.style.transform = `perspective(900px) rotateX(${(-y * 7).toFixed(2)}deg) rotateY(${(x * 9).toFixed(2)}deg) translateY(-4px)`;
+      }
+      const m = e.target.closest && e.target.closest(MAG);
+      if (m) {
+        const r = m.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+        m.style.transform = `translate(${(dx * 0.22 - 2).toFixed(1)}px, ${(dy * 0.35 - 2).toFixed(1)}px)`; magEl = m;
+      } else if (magEl) { magEl.style.transform = ''; magEl = null; }
+      const hero = $('.hero');
+      if (hero) { hero.style.setProperty('--px', ((e.clientX / innerWidth) - 0.5).toFixed(3)); hero.style.setProperty('--py', ((e.clientY / innerHeight) - 0.5).toFixed(3)); }
     }, { passive: true });
+    document.addEventListener('pointerout', e => {
+      const t = e.target.closest && e.target.closest(TILT);
+      if (t && !t.contains(e.relatedTarget)) { t.classList.remove('tilting'); t.style.transform = ''; }
+      const m = e.target.closest && e.target.closest(MAG);
+      if (m && !m.contains(e.relatedTarget)) { m.style.transform = ''; magEl = null; }
+    }, { passive: true });
+  }
+
+  /* ---------- bară de progres la scroll ---------- */
+  if (!reduce) {
+    const bar = document.createElement('div'); bar.className = 'scrollbar'; document.body.append(bar);
+    let ticking = false;
+    const update = () => { ticking = false; const h = document.documentElement.scrollHeight - innerHeight; bar.style.transform = `scaleX(${h > 0 ? Math.min(1, scrollY / h) : 0})`; };
+    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    update();
   }
 
   /* ---------- confetti ---------- */

@@ -509,16 +509,6 @@ textarea { font: inherit; padding: 11px 14px; border-radius: 12px; border: 1px s
 /* butoane */
 .btn svg { transition: transform .25s cubic-bezier(.3, 1.4, .5, 1); }
 .btn:hover svg { transform: translate(3px, -3px); }
-.btn.lime { position: relative; overflow: hidden; }
-.btn.lime::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .55) 50%, transparent 70%); transform: translateX(-120%); }
-.btn.lime:hover::after { transform: translateX(120%); transition: transform .7s ease; }
-
-/* lumină care urmărește cursorul (în fundalul cardului, ca să nu atingă conținutul) */
-.card, .class-card, .lesson { --mx: 50%; --my: 50%; }
-.card, .lesson { background-image: radial-gradient(380px circle at var(--mx) var(--my), var(--glow, transparent), transparent 62%); }
-.card:hover, .lesson:hover { --glow: color-mix(in srgb, var(--lime) 24%, transparent); }
-.online, .b-arena { background-image: radial-gradient(380px circle at var(--mx) var(--my), var(--glow, transparent), transparent 62%) !important; }
-.online:hover, .b-arena:hover { --glow: rgba(210, 245, 60, .2); }
 
 /* progres: barele cresc din stânga */
 .prog > i, .bar i { transform-origin: left center; animation: grow 1.1s cubic-bezier(.2, .7, .2, 1) .15s both; }
@@ -562,3 +552,47 @@ textarea { font: inherit; padding: 11px 14px; border-radius: 12px; border: 1px s
   .rv { opacity: 1; transform: none; }
   .floaties, .confetti { display: none; }
 }
+
+/* ===== animații v2 (fără lime intermitent) ===== */
+/* carduri 3D care se înclină după mouse (transformul vine din fx.js) */
+.bento a.card, .class-card, .asg, .stat, .bq { transition: transform .35s cubic-bezier(.2, .7, .2, 1), box-shadow .35s, border-color .2s; will-change: transform; }
+.bento a.card:hover, .class-card:hover { box-shadow: 0 24px 50px -24px rgba(0, 0, 0, .45); border-color: var(--ink); }
+.bento a.card.tilting, .class-card.tilting { transition: transform .08s linear, box-shadow .35s, border-color .2s; }
+
+/* butoane: apăsare + magnetic */
+.btn { transition: transform .2s cubic-bezier(.3, 1.3, .5, 1), box-shadow .2s, background .15s; }
+.btn:active { transform: scale(.95) !important; }
+.opt, .ans, .seg button, .sugg button { transition: transform .18s cubic-bezier(.3, 1.3, .5, 1), border-color .15s, background .15s, color .15s; }
+.opt:active, .sugg button:active { transform: scale(.96); }
+.sugg button:hover { transform: translateX(4px); }
+
+/* simboluri care urmăresc cursorul (strat de adâncime) */
+.floaties span { translate: calc(var(--px, 0) * var(--k, 18) * 1px) calc(var(--py, 0) * var(--k, 18) * 1px); transition: translate .5s cubic-bezier(.2, .7, .2, 1); }
+.floaties span:nth-child(2n) { --k: 34; } .floaties span:nth-child(3n) { --k: -26; } .floaties span:nth-child(4) { --k: 48; }
+
+/* bară de progres la scroll */
+.scrollbar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--ink); transform: scaleX(0); transform-origin: left; z-index: 80; pointer-events: none; }
+
+/* lecții: conținutul intră pe rând când deschizi */
+.lesson[open] .lesson-body > * { animation: fadeUp .5s cubic-bezier(.2, .7, .2, 1) both; }
+.lesson[open] .lesson-body > :nth-child(2) { animation-delay: .05s; } .lesson[open] .lesson-body > :nth-child(3) { animation-delay: .1s; }
+.lesson[open] .lesson-body > :nth-child(4) { animation-delay: .15s; } .lesson[open] .lesson-body > :nth-child(5) { animation-delay: .2s; }
+.lesson[open] .lesson-body > :nth-child(6) { animation-delay: .25s; } .lesson[open] .lesson-body > :nth-child(7) { animation-delay: .3s; }
+.lesson[open] .lesson-body > :nth-child(n+8) { animation-delay: .35s; }
+.lesson summary { transition: padding-left .25s cubic-bezier(.2, .7, .2, 1); }
+.lesson summary:hover { padding-left: 32px; }
+
+/* meniu: linkurile se ridică la hover */
+.nav-links a { transition: color .15s, transform .25s cubic-bezier(.3, 1.4, .5, 1); }
+.nav-links a:hover { transform: translateY(-2px); }
+
+/* etichete și cipuri */
+.chip { transition: transform .2s cubic-bezier(.3, 1.4, .5, 1); }
+.chip:hover { transform: translateY(-2px) rotate(-2deg); }
+
+/* titlurile mari de pagină intră cu o ușoară ridicare */
+.page-h { animation: lineIn .8s cubic-bezier(.2, .8, .2, 1) both; }
+.eyebrow { animation: fadeUp .6s ease both; }
+.lead { animation: fadeUp .7s ease .15s both; }
+
+@media (prefers-reduced-motion: reduce) { .scrollbar { display: none; } }
