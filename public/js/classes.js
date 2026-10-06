@@ -11,6 +11,7 @@
 
   MI.R.clase = async (args = []) => {
     const h = host();
+    if (API.st.dbError) { h.innerHTML = gate('Baza de date nu răspunde', 'Serverul rulează, dar nu poate folosi baza de date: <code>' + esc(API.st.dbError) + '</code>. Verifică variabilele TURSO_DATABASE_URL și TURSO_AUTH_TOKEN în Vercel și fă Redeploy.'); return; }
     if (!API.st.reachable) { h.innerHTML = gate('Serverul nu este pornit', 'Clasele, temele și dueluri online au nevoie de server. Pornește-l cu <code>npm start</code> și deschide <code>http://localhost:3000</code>.'); return; }
     if (!API.st.user) { h.innerHTML = gate('Intră în cont', 'Profesorii creează clase și dau teme; elevii se alătură cu un cod și rezolvă temele. Progresul tău se salvează pe server.', '<button class="btn lime" id="gl">Intră sau creează cont</button>'); $('#gl').onclick = MI.openAuth; return; }
     h.innerHTML = '<p class="hint" style="margin-top:40px">Se încarcă…</p>';

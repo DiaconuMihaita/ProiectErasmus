@@ -75,6 +75,7 @@
   async function mount() {
     const box = $('#onlineBox'); if (!box) return;
     if (M) return paintGame();
+    if (API.st.dbError) { box.innerHTML = `<h4>Duel online</h4><p class="hint">Serverul rulează, dar nu poate folosi baza de date: <code>${esc(API.st.dbError)}</code></p><p class="hint">Verifică variabilele TURSO_DATABASE_URL și TURSO_AUTH_TOKEN în Vercel și fă Redeploy.</p>`; return; }
     if (!API.st.reachable) { box.innerHTML = `<h4>Duel online</h4><p class="hint">Dueluri între dispozitive diferite au nevoie de server. Pornește-l cu <code>npm start</code> sau publică proiectul pe Vercel.</p>`; return; }
     if (!API.st.user) { box.innerHTML = `<h4>Duel online</h4><p class="lead" style="font-size:1rem">Joacă în timp real împotriva unui coleg de pe alt telefon sau calculator.</p><button class="btn lime" id="olog">Intră în cont</button>`; $('#olog').onclick = MI.openAuth; return; }
     paintLobby();

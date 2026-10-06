@@ -1,7 +1,7 @@
 /* Client API: autentificare și cereri. Funcționează și fără server (mod offline). */
 const API = (() => {
   const TOKEN_KEY = 'mi9-token';
-  const st = { token: '', user: null, reachable: false, ai: false, model: '' };
+  const st = { token: '', user: null, reachable: false, ai: false, model: '', dbError: null, db: '' };
   try { st.token = localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { /* ignorat */ }
   const subs = { auth: [], live: [] };
   const emit = (k, v) => subs[k].forEach(f => { try { f(v); } catch (e) { console.error(e); } });
@@ -28,7 +28,8 @@ const API = (() => {
     try {
       const c = await req('GET', '/api/config', undefined, 2500);
       if (typeof c.ai !== 'boolean') throw new Error('nu e serverul nostru');
-      st.reachable = true; st.ai = c.ai; st.model = c.model;
+      st.reachable = true; st.ai = c.ai; st.model = c.model; st.dbError = c.dbError || null; st.db = c.db || '';
+      if (st.dbError) return null;
     } catch (e) { st.reachable = false; return null; }
     if (st.token) {
       try { const me = await get('/api/me'); st.user = me.user; return me; }
