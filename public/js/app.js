@@ -34,8 +34,8 @@
     t === 'p' ? `<p>${inl(c)}</p>` : t === 'h' ? `<h4>${esc(c)}</h4>` : t === 'ul' ? `<ul>${c.map(x => `<li>${inl(x)}</li>`).join('')}</ul>`
       : t === 'f' ? `<div class="formula">${esc(c)}</div>` : t === 'ex' ? `<div class="ex"><span>Exemplu</span>${esc(c).replace(/\n/g, '<br>')}</div>`
         : `<pre><code>${esc(c)}</code></pre>`).join('');
-  const fmtDate = ms => ms ? new Date(ms).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-  const fmtDT = ms => new Date(ms).toLocaleString('ro-RO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const fmtDate = ms => ms ? new Date(ms).toLocaleDateString(I18N.locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const fmtDT = ms => new Date(ms).toLocaleString(I18N.locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
   /* =============== stare =============== */
   const KEY = 'mi9-state-v1';
@@ -259,7 +259,7 @@
   function drawChat() {
     const m = $('#msgs');
     if (!S.chat.length) {
-      m.innerHTML = `<div class="msg a">Salut${S.name ? ', ' + esc(S.name) : ''}! Sunt tutorul MathInfo 9. Încearcă una dintre sugestii sau scrie liber: o ecuație, un calcul sau „explică-mi for-ul în C++”.</div>`;
+      m.innerHTML = `<div class="msg a">${I18N.t('Salut', 'Hi')}${S.name ? ', ' + esc(S.name) : ''}! ${I18N.t('Sunt tutorul MathInfo 9. Încearcă una dintre sugestii sau scrie liber: o ecuație, un calcul sau „explică-mi for-ul în C++”.', 'I am the MathInfo 9 tutor. Try one of the suggestions or type freely: an equation, a calculation or “explain the for loop in C++”.')}</div>`;
     } else {
       m.innerHTML = S.chat.map(c => `<div class="msg ${c.r}">${c.r === 'u' ? esc(c.t) : md(c.t)}${c.src ? `<span class="src">${esc(c.src)}</span>` : ''}</div>`).join('');
     }
@@ -682,6 +682,9 @@
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next; try { localStorage.setItem('mi9-theme', next); } catch (e) { /* ignorat */ }
   };
+  const langBtn = $('#lang');
+  if (langBtn) { langBtn.textContent = I18N.lang === 'en' ? 'RO' : 'EN'; langBtn.title = I18N.lang === 'en' ? 'Switch to Romanian' : 'Switch to English'; langBtn.onclick = () => I18N.set(I18N.lang === 'en' ? 'ro' : 'en'); }
+  if (I18N.lang === 'en') I18N.start();
   window.addEventListener('hashchange', route);
   window.addEventListener('load', async () => {
     renderLvl();

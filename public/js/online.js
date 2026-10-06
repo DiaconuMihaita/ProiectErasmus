@@ -30,7 +30,16 @@
     if (before !== lobby.state && MI.curr() === 'arena' && !M) paintLobby();
   }
 
+  /** Serverul trimite întrebările în română + id-ul și ordinea opțiunilor; le afișăm în limba curentă din banca locală. */
+  function localize(v) {
+    const mapQ = (q, id, order) => { const src = (typeof QUESTIONS !== 'undefined') && QUESTIONS[id]; if (!src || !order) return q; return { ...q, q: src.q, t: src.t, o: order.map(i => src.o[i]) }; };
+    if (v.q && v.q.id !== undefined) v.q = mapQ(v.q, v.q.id, v.q.order);
+    if (v.rev && v.rev.qid !== undefined && QUESTIONS[v.rev.qid]) v.rev = { ...v.rev, e: QUESTIONS[v.rev.qid].e };
+    return v;
+  }
+
   function applyView(v) {
+    v = localize(v);
     if (!M || M.id !== v.id) {
       M = { id: v.id, names: v.names, you: v.you, subject: v.subject, rounds: v.rounds, time: v.time, sc: [0, 0], cor: [0, 0], phase: 'intro', i: -1, streak: 0, best: 0, picked: null, oppDone: false, rev: null, seenRev: -1 };
       lobby.state = 'idle';

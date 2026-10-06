@@ -50,6 +50,7 @@ Note:
 
 ## Ce poate face
 
+- **Română / English:** buton RO/EN în meniu (lecții, întrebări, tutor, interfață, mesaje de eroare). Textele sunt în `public/js/i18n*.js`.
 - **Cont** (elev / profesor); progresul (XP, insigne, lecții) se sincronizează pe server.
 - **Clase:** profesorul creează o clasă și primește un cod; elevii intră cu codul.
 - **Teme:** întrebări din bancă (72), scrise de profesor sau generate cu AI; auto-corectare; rezultate pe elev și pe întrebare.
