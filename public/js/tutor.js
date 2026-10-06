@@ -1,0 +1,275 @@
+/* Tutor AI: solver local (calcule, ecuații, cmmdc, baze...) + bază de cunoștințe + Gemini opțional */
+
+const Tutor = (() => {
+  const strip = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  const fmt = (x) => {
+    if (!isFinite(x)) return String(x);
+    const r = Math.round(x * 1e9) / 1e9;
+    return String(r).replace('.', ',').replace('-', '−');
+  };
+  const par = x => x < 0 ? '(' + fmt(x) + ')' : fmt(x);
+  const poly = (a, b, c) => {
+    const parts = [[a, 'x²'], [b, 'x'], [c, '']].filter(([k]) => k !== 0);
+    return parts.map(([k, v], i) => {
+      const abs = Math.abs(k), body = (abs === 1 && v) ? v : fmt(abs) + v;
+      return i === 0 ? (k < 0 ? '−' : '') + body : (k < 0 ? ' − ' : ' + ') + body;
+    }).join('') + ' = 0';
+  };
+  const ints = s => (s.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+  const nums = s => (s.match(/-?\d+(?:[.,]\d+)?/g) || []).map(n => parseFloat(n.replace(',', '.')));
+
+  /* ---------- parser de expresii (fără eval) ---------- */
+  function evaluate(src) {
+    const s = src.replace(/×|·/g, '*').replace(/÷|:/g, '/').replace(/−/g, '-').replace(/,/g, '.').replace(/√/g, 'sqrt')
+      .replace(/\s+/g, '').toLowerCase();
+    let i = 0;
+    const peek = () => s[i];
+    function expr() {
+      let v = term();
+      while (peek() === '+' || peek() === '-') { const o = s[i++]; const r = term(); v = o === '+' ? v + r : v - r; }
+      return v;
+    }
+    function term() {
+      let v = power();
+      while (peek() === '*' || peek() === '/') {
+        const o = s[i++]; const r = power();
+        if (o === '/' && r === 0) throw new Error('Împărțire la zero');
+        v = o === '*' ? v * r : v / r;
+      }
+      return v;
+    }
+    function power() {
+      const b = unary();
+      if (peek() === '^') { i++; return Math.pow(b, power()); }
+      return b;
+    }
+    function unary() {
+      if (peek() === '-') { i++; return -unary(); }
+      if (peek() === '+') { i++; return unary(); }
+      return atom();
+    }
+    function atom() {
+      if (peek() === '(') { i++; const v = expr(); if (peek() !== ')') throw new Error('Paranteză lipsă'); i++; return v; }
+      const f = /^(sqrt|abs)/.exec(s.slice(i));
+      if (f) { i += f[0].length; const v = atom(); return f[0] === 'sqrt' ? Math.sqrt(v) : Math.abs(v); }
+      const m = /^\d+(\.\d+)?/.exec(s.slice(i));
+      if (!m) throw new Error('Expresie invalidă');
+      i += m[0].length;
+      return parseFloat(m[0]);
+    }
+    const v = expr();
+    if (i < s.length) throw new Error('Expresie invalidă');
+    return v;
+  }
+
+  /* ---------- polinoame de gradul ≤ 2 ---------- */
+  function parsePoly(side) {
+    const t = side.replace(/\*/g, '');
+    if (!t) return null;
+    const terms = t.replace(/(?!^)([+-])/g, ' $1').split(' ').filter(Boolean);
+    const c = [0, 0, 0];
+    for (const term of terms) {
+      const m = /^([+-]?)(\d*\.?\d*)(x\^2|x)?$/.exec(term);
+      if (!m || (m[2] === '' && !m[3]) || m[2] === '.') return null;
+      const sign = m[1] === '-' ? -1 : 1;
+      const val = sign * (m[2] === '' ? 1 : parseFloat(m[2]));
+      c[m[3] === 'x^2' ? 2 : m[3] === 'x' ? 1 : 0] += val;
+    }
+    return c;
+  }
+
+  function solveEquation(text) {
+    let t = text.toLowerCase().replace(/−/g, '-').replace(/²/g, '^2').replace(/,/g, '.').replace(/\s+/g, '');
+    t = t.replace(/^(rezolva|rezolvă|calculeaza|calculează|ecuatia|ecuația)[:]?/, '');
+    if (!/^[\dx+\-*^.=]+$/.test(t) || (t.match(/=/g) || []).length !== 1 || !t.includes('x')) return null;
+    const [l, r] = t.split('=');
+    const L = parsePoly(l), R = parsePoly(r);
+    if (!L || !R) return null;
+    const [c, b, a] = [L[0] - R[0], L[1] - R[1], L[2] - R[2]];
+    const pretty = poly(a, b, c);
+
+    if (a === 0) {
+      if (b === 0) return c === 0 ? '**Egalitate adevărată pentru orice x.** Ecuația are o infinitate de soluții (x ∈ ℝ).' : '**Ecuația nu are soluții:** ajunge la `' + fmt(c) + ' = 0`, fals.';
+      return `**Ecuație de gradul I**\n\nO aduc la forma \`${pretty}\`.\n\n\`${fmt(b)}x = ${fmt(-c)}\`\n\n**x = ${fmt(-c / b)}**`;
+    }
+    const d = b * b - 4 * a * c;
+    let out = `**Ecuație de gradul II**\n\nForma generală: \`${pretty}\`\n\n1. Coeficienți: a = ${fmt(a)}, b = ${fmt(b)}, c = ${fmt(c)}\n2. Discriminant: Δ = b² − 4ac = ${par(b)}² − 4·${par(a)}·${par(c)} = **${fmt(d)}**\n`;
+    if (d > 0) {
+      const sq = Math.sqrt(d), x1 = (-b - sq) / (2 * a), x2 = (-b + sq) / (2 * a);
+      const exact = Number.isInteger(sq) ? fmt(sq) : '√' + fmt(d) + ' ≈ ' + fmt(sq);
+      out += `3. Δ > 0 → două rădăcini reale distincte, \`√Δ = ${exact}\`\n4. x₁ = (−b − √Δ)/2a = **${fmt(Math.min(x1, x2))}**, x₂ = (−b + √Δ)/2a = **${fmt(Math.max(x1, x2))}**\n\nVerificare Viète: x₁ + x₂ = ${fmt(x1 + x2)} = −b/a ✓, x₁·x₂ = ${fmt(x1 * x2)} = c/a ✓`;
+    } else if (d === 0) {
+      out += `3. Δ = 0 → o rădăcină dublă\n4. **x₁ = x₂ = ${fmt(-b / (2 * a))}**`;
+    } else {
+      out += `3. Δ < 0 → **nu există rădăcini reale** (soluții doar în ℂ, la clasa a X-a).`;
+    }
+    out += `\n\nVârful parabolei: V(${fmt(-b / (2 * a))}, ${fmt(-d / (4 * a))})`;
+    return out;
+  }
+
+  /* ---------- aritmetică pe numere naturale ---------- */
+  const gcd = (a, b) => { while (b) [a, b] = [b, a % b]; return a; };
+
+  function euclid(a, b) {
+    let out = `**cmmdc(${a}, ${b}) prin algoritmul lui Euclid**\n\n`;
+    let x = a, y = b;
+    while (y) { out += `\`${x} = ${Math.floor(x / y)}·${y} + ${x % y}\`\n`; [x, y] = [y, x % y]; }
+    out += `\nUltimul rest nenul este **${x}**, deci cmmdc = ${x}.\ncmmmc = (${a}·${b}) / ${x} = **${(a * b) / x}**`;
+    return out;
+  }
+
+  function primeInfo(n) {
+    if (n < 2) return `**${n} nu este prim** (numerele prime sunt ≥ 2).`;
+    for (let d = 2; d * d <= n; d++) if (n % d === 0) return `**${n} nu este prim.** Cel mai mic divizor propriu este ${d}: ${n} = ${d} · ${n / d}.\n\nAm testat divizori până la √${n} ≈ ${fmt(Math.sqrt(n))}.`;
+    return `**${n} este număr prim.** Nu are niciun divizor între 2 și √${n} ≈ ${fmt(Math.sqrt(n))}, deci singurii lui divizori sunt 1 și ${n}.`;
+  }
+
+  function factorize(n) {
+    const parts = []; let m = n;
+    for (let d = 2; d * d <= m; d++) { let e = 0; while (m % d === 0) { m /= d; e++; } if (e) parts.push(e > 1 ? `${d}^${e}` : `${d}`); }
+    if (m > 1) parts.push(String(m));
+    return parts.join(' · ');
+  }
+
+  function divisors(n) {
+    const r = [];
+    for (let d = 1; d <= n; d++) if (n % d === 0) r.push(d);
+    return r;
+  }
+
+  function toBinary(n) {
+    let out = `**${n} în baza 2**\n\n`, m = n; const rem = [];
+    if (n === 0) return '**0 în baza 2 este 0.**';
+    while (m > 0) { out += `\`${m} : 2 = ${Math.floor(m / 2)}  rest ${m % 2}\`\n`; rem.push(m % 2); m = Math.floor(m / 2); }
+    return out + `\nResturile citite de jos în sus: **${rem.reverse().join('')}₂**`;
+  }
+  function fromBinary(str) {
+    const bits = str.split(''); const n = bits.length;
+    const terms = bits.map((b, i) => b === '1' ? `2^${n - 1 - i}` : null).filter(Boolean);
+    return `**${str}₂ în baza 10**\n\n${terms.join(' + ')}\n= ${terms.map(t => Math.pow(2, +t.slice(2))).join(' + ')}\n= **${parseInt(str, 2)}**`;
+  }
+
+  /* ---------- rutare locală ---------- */
+  let kbHit = false;
+  function local(raw) {
+    kbHit = false;
+    const text = raw.trim();
+    const t = strip(text);
+    if (!t) return null;
+    const n = nums(text);
+
+    if (/^(salut|buna|hei|hello|hey|servus|noroc)\b/.test(t) && t.length < 20)
+      return 'Salut! Sunt tutorul MathInfo. Pot rezolva ecuații (`x^2 - 5x + 6 = 0`), calcule (`(3+4)*2^3`), `cmmdc 48 36`, `97 prim`, `binar 25`, sau să-ți explic orice din programa de clasa a IX-a la Mate și Info.';
+
+    const eq = solveEquation(text);
+    if (eq) return eq;
+
+    if (/cmmdc|gcd|cel mai mare divizor|cmmmc/.test(t) && n.length >= 2 && n.every(x => Number.isInteger(x) && x > 0))
+      return euclid(Math.max(n[0], n[1]), Math.min(n[0], n[1]));
+    if (/descompun|factori/.test(t) && n.length >= 1 && Number.isInteger(n[0]) && n[0] > 1)
+      return `**Descompunerea în factori primi:** ${n[0]} = ${factorize(n[0])}`;
+    if (/divizor/.test(t) && n.length >= 1 && Number.isInteger(n[0]) && n[0] > 0 && n[0] <= 100000) {
+      const d = divisors(n[0]); return `**Divizorii lui ${n[0]}** (${d.length}): ${d.join(', ')}`;
+    }
+    if (/\bprim\b|prime/.test(t) && !/ciur|eratostene|definitie|ce este|ce sunt/.test(t) && n.length >= 1 && Number.isInteger(n[0]) && n[0] <= 1e12)
+      return primeInfo(n[0]);
+    if (/zecimal|baza 10|din binar/.test(t)) {
+      const m = /[01]{2,}/.exec(text); if (m) return fromBinary(m[0]);
+    }
+    if (/binar|baza 2|in 2\b/.test(t) && n.length >= 1 && Number.isInteger(n[0]) && n[0] >= 0 && n[0] < 1e9) return toBinary(n[0]);
+    if (/hexa|baza 16/.test(t) && n.length >= 1 && Number.isInteger(n[0]) && n[0] >= 0)
+      return `**${n[0]} în baza 16** = **${n[0].toString(16).toUpperCase()}₁₆**`;
+    if (/factorial|\d+!/.test(t) && n.length >= 1 && Number.isInteger(n[0]) && n[0] >= 0 && n[0] <= 20) {
+      let f = 1; for (let i = 2; i <= n[0]; i++) f *= i; return `**${n[0]}! = ${f}**`;
+    }
+    if (/suma.*(primelor|numerelor)|1\s*\+\s*2\s*\+.*\+\s*n/.test(t) && n.length >= 1) {
+      const k = n[n.length - 1];
+      if (Number.isInteger(k) && k > 0) return `Suma 1 + 2 + … + ${k} = ${k}·${k + 1}/2 = **${k * (k + 1) / 2}**`;
+    }
+    if (/distanta/.test(t) && ints(text).length === 4) {
+      const [x1, y1, x2, y2] = ints(text); const dd = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+      return `**AB = √((${fmt(x2)} − ${fmt(x1)})² + (${fmt(y2)} − ${fmt(y1)})²) = √${fmt(dd)}** ≈ ${fmt(Math.sqrt(dd))}`;
+    }
+    if (/mijloc/.test(t) && ints(text).length === 4) {
+      const [x1, y1, x2, y2] = ints(text); return `**M((${fmt(x1)} + ${fmt(x2)})/2, (${fmt(y1)} + ${fmt(y2)})/2) = M(${fmt((x1 + x2) / 2)}, ${fmt((y1 + y2) / 2)})**`;
+    }
+
+    // expresie aritmetică
+    const stripped = t.replace(/^(calculeaza|calculează|cat face|cat este|cat e|rezultatul lui)\s*/, '').replace(/[=?]+$/, '').trim();
+    const bare = stripped.replace(/sqrt|abs/g, '');
+    if (/\d/.test(stripped) && /[+\-*/^×÷:√(]/.test(stripped) && /^[\d\s+\-*/^().,×÷:√−·]+$/.test(bare)) {
+      try { const v = evaluate(stripped); if (isFinite(v)) return `**${stripped.replace(/\s+/g, ' ')} = ${fmt(v)}**`; } catch (e) { return `Nu pot calcula expresia: ${e.message}.`; }
+    }
+
+    // bază de cunoștințe
+    let best = null, bestScore = 0;
+    for (const e of KB) {
+      let sc = 0;
+      for (const k of e.k) { const kk = strip(k); if (t.includes(kk.trim())) sc += kk.trim().length; }
+      if (sc > bestScore) { bestScore = sc; best = e; }
+    }
+    if (best && bestScore >= 2) { kbHit = true; return best.a; }
+    return null;
+  }
+
+  const FALLBACK = 'Nu am înțeles încă exact întrebarea, dar iată ce știu să fac fără conexiune la internet:\n\n- **Ecuații:** `x^2 - 5x + 6 = 0`, `3x + 2 = 11`\n- **Calcule:** `(3 + 4) * 2^3`, `sqrt(144)`\n- **Info:** `cmmdc 48 36`, `97 prim`, `binar 25`, `divizori 36`\n- **Teorie:** discriminant, modul, intervale, vectori, for/while, vectori în C++, bubble sort…\n\nPentru răspunsuri la orice întrebare ai nevoie de AI: fie serverul școlii are cheie Gemini, fie adaugi cheia ta în ⚙ Setări.';
+
+  const SYSTEM = 'Ești tutorul MathInfo 9, pentru elevi de clasa a IX-a de la Liceul Teoretic „Emil Racoviță” Vaslui. Răspunzi doar în limba română, clar și prietenos, la Matematică (algebră, funcții, geometrie analitică) și Informatică (C++, algoritmi) de clasa a IX-a. Explică pas cu pas, ghidează elevul să înțeleagă (nu doar să copieze rezultatul), folosește exemple scurte și formatare simplă (**bold**, `cod`, liste). Dacă întrebarea nu ține de aceste materii, redirecționează politicos.';
+
+  async function gemini(history, key, model) {
+    const contents = history.slice(-12).map(m => ({ role: m.r === 'u' ? 'user' : 'model', parts: [{ text: m.t }] }));
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents })
+    });
+    if (!res.ok) {
+      let msg = res.status + ''; try { msg = (await res.json()).error.message; } catch (e) { /* ignore */ }
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    const out = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+    if (!out) throw new Error('Răspuns gol');
+    return out.map(p => p.text || '').join('');
+  }
+
+  function lessonMd(l) {
+    return `**${l.title}** — din lecție:\n\n` + l.body.map(([t, c]) => t === 'h' ? `**${c}**` : t === 'ul' ? c.map(x => '- ' + x).join('\n') : t === 'code' ? '```\n' + c + '\n```' : c).join('\n\n');
+  }
+
+  async function serverAI(history, lessonId) {
+    const r = await fetch('/api/ai', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(API.st.token ? { Authorization: 'Bearer ' + API.st.token } : {}) },
+      body: JSON.stringify({ messages: history.slice(-12), lessonId: lessonId || null }), signal: AbortSignal.timeout(50000)
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'eroare ' + r.status);
+    return j.text;
+  }
+
+  /* Ordine: calcul exact local → AI server → cheie proprie Gemini → bază locală → lecția curentă */
+  async function reply(history, settings, opts = {}) {
+    const last = history[history.length - 1].t;
+    const loc = local(last);
+    const exact = !!loc && !kbHit;
+    if (!exact) {
+      let note = '';
+      if (opts.serverAI) {
+        try { return { text: await serverAI(history, opts.lessonId), src: 'AI' + (opts.lessonId ? ' · cu lecția' : '') }; }
+        catch (e) { note = e.message; }
+      }
+      if (settings.key) {
+        try { return { text: await gemini(history, settings.key, settings.model || 'gemini-2.5-flash'), src: 'Gemini' }; }
+        catch (e) { note = e.message; }
+      }
+      if (!loc && opts.lessonId) {
+        const l = LESSONS.find(x => x.id === opts.lessonId);
+        if (l) return { text: lessonMd(l) + (note ? '\n\n_AI indisponibil (' + note + ')._' : ''), src: 'Local · lecția' };
+      }
+      return { text: (loc || FALLBACK) + (note ? '\n\n_AI indisponibil (' + note + '). Am folosit tutorul local._' : ''), src: 'Local' };
+    }
+    return { text: loc, src: 'Local · calcul exact' };
+  }
+
+  return { reply, local, evaluate, gcd, toBinary };
+})();
