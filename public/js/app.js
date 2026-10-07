@@ -10,11 +10,17 @@
   const shuffle = arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const ARROW = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 
+  /** Notație matematică într-un text deja escapat: x_A → x<sub>A</sub>, a^2 → a<sup>2</sup>, vec(AB) → vector cu săgeată. */
+  const mathify = h => h
+    .replace(/\bvec\(([A-Za-z]{1,3})\)/g, '<span class="vec">$1</span>')
+    .replace(/\b([A-Za-z])_(\{[^}]{1,8}\}|[A-Za-z0-9]{1,3})\b/g, (m, a, b) => a + '<sub>' + b.replace(/[{}]/g, '') + '</sub>')
+    .replace(/\^(\{[^}]{1,8}\}|\d{1,3}|[a-z])(?![A-Za-z0-9])/g, (m, e) => '<sup>' + e.replace(/[{}]/g, '') + '</sup>');
+
   function md(src) {
     const parts = String(src).split(/```/);
     return parts.map((p, i) => {
       if (i % 2) return '<pre><code>' + esc(p.replace(/^\w*\n/, '').replace(/\n$/, '')) + '</code></pre>';
-      let t = esc(p);
+      let t = mathify(esc(p));
       t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>')
         .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
         .replace(/(^|\s)_([^_\n]+)_(?=\s|$|[.,])/g, '$1<i>$2</i>');
@@ -38,10 +44,10 @@
     }).join('');
   }
 
-  const inl = t => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\[([^\]]+)\]\((#[^)]+)\)/g, '<a href="$2">$1</a>');
+  const inl = t => mathify(esc(t)).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\[([^\]]+)\]\((#[^)]+)\)/g, '<a href="$2">$1</a>');
   const blocksHtml = bl => bl.map(([t, c]) =>
     t === 'p' ? `<p>${inl(c)}</p>` : t === 'h' ? `<h4>${esc(c)}</h4>` : t === 'ul' ? `<ul>${c.map(x => `<li>${inl(x)}</li>`).join('')}</ul>`
-      : t === 'f' ? `<div class="formula">${esc(c)}</div>` : t === 'ex' ? `<div class="ex"><span>Exemplu</span>${esc(c).replace(/\n/g, '<br>')}</div>`
+      : t === 'f' ? `<div class="formula">${mathify(esc(c))}</div>` : t === 'ex' ? `<div class="ex"><span>Exemplu</span>${mathify(esc(c)).replace(/\n/g, '<br>')}</div>`
         : `<pre><code>${esc(c)}</code></pre>`).join('');
   const fmtDate = ms => ms ? new Date(ms).toLocaleDateString(I18N.locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   const fmtDT = ms => new Date(ms).toLocaleString(I18N.locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });

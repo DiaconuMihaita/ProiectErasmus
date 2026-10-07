@@ -610,3 +610,11 @@ textarea { font: inherit; padding: 11px 14px; border-radius: 12px; border: 1px s
 .msg th { background: color-mix(in srgb, var(--ink) 8%, transparent); font-weight: 600; }
 .msg .more { margin-top: 12px; }
 .msg.a .src + .more, .msg.a .more { display: inline-flex; }
+
+/* notație matematică: indici, exponenți, vectori cu săgeată */
+sub, sup { font-size: .72em; line-height: 0; font-family: inherit; }
+sub { vertical-align: -.28em; }
+sup { vertical-align: .45em; }
+.vec { position: relative; display: inline-block; padding-top: .42em; font-style: italic; }
+.vec::before { content: '→'; position: absolute; top: -.28em; left: 0; right: 0; text-align: center; font-size: .78em; line-height: 1; font-style: normal; }
+code .vec::before, .formula .vec::before { top: -.34em; }

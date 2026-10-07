@@ -98,12 +98,12 @@ const LESSONS_EN = {
 
   m8: { title: 'Vectors in the plane', blurb: 'Operations with vectors, collinearity, coordinates, distance, centroid.', ask: 'Explain vectors in the plane: sum, coordinates, distance, midpoint, centroid',
     body: [
-      ['p', 'A **vector** `AB` has a direction, a sense and a length (magnitude) `|AB|`. Two vectors are equal if they have the same direction, the same sense and the same magnitude.'],
-      ['ul', ['**Sum:** the triangle rule `AB + BC = AC` and the parallelogram rule.', '**Scalar multiplication:** `k·v` has magnitude `|k|·|v|`; for `k < 0` the sense is reversed.', '**Collinear:** `u = k·v` for a real number k.', "Chasles' relation: `AB + BC = AC`."]],
+      ['p', 'A **vector** `vec(AB)` has a direction, a sense and a length (magnitude) `|vec(AB)|`. Two vectors are equal if they have the same direction, the same sense and the same magnitude.'],
+      ['ul', ['**Sum:** the triangle rule `vec(AB) + vec(BC) = vec(AC)` and the parallelogram rule.', '**Scalar multiplication:** `k·vec(v)` has magnitude `|k|·|vec(v)|`; for `k < 0` the sense is reversed.', '**Collinear:** `vec(u) = k·vec(v)` for a real number k.', "Chasles' relation: `vec(AB) + vec(BC) = vec(AC)`."]],
       ['h', 'Vectors in coordinates'],
-      ['f', 'AB = (x_B − x_A , y_B − y_A)        |AB| = √((x_B − x_A)² + (y_B − y_A)²)'],
+      ['f', 'vec(AB) = (x_B − x_A , y_B − y_A)        |vec(AB)| = √((x_B − x_A)² + (y_B − y_A)²)'],
       ['ul', ['Add component by component: `(a, b) + (c, d) = (a + c, b + d)`; `k·(a, b) = (ka, kb)`.', 'The midpoint of segment AB: `M((x_A + x_B)/2 , (y_A + y_B)/2)`.', 'The centroid of triangle ABC: `G((x_A + x_B + x_C)/3 , (y_A + y_B + y_C)/3)`.', 'The vectors `(a, b)` and `(c, d)` are collinear ⇔ `a·d − b·c = 0`.']],
-      ['ex', 'A(0, 0), B(3, 4): AB = (3, 4), |AB| = √(9 + 16) = 5, midpoint = (1.5; 2)'],
+      ['ex', 'A(0, 0), B(3, 4): vec(AB) = (3, 4), |vec(AB)| = √(9 + 16) = 5, midpoint = (1.5; 2)'],
       ['ex', 'A(0,0), B(6,0), C(0,3) ⇒ G = ((0+6+0)/3 , (0+0+3)/3) = (2, 1)']
     ] },
 

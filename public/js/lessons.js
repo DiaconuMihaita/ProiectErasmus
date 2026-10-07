@@ -111,12 +111,12 @@ const LESSONS = [
   { id: 'm8', s: 'mate', n: '08', title: 'Vectori în plan', blurb: 'Operații cu vectori, coliniaritate, coordonate, distanță, centrul de greutate.',
     ask: 'Explică vectorii în plan: sumă, coordonate, distanță, mijloc, centrul de greutate',
     body: [
-      ['p', 'Un **vector** `AB` are direcție, sens și lungime (modul) `|AB|`. Doi vectori sunt egali dacă au aceeași direcție, același sens și același modul.'],
-      ['ul', ['**Suma:** regula triunghiului `AB + BC = AC` și regula paralelogramului.', '**Înmulțirea cu un scalar:** `k·v` are modulul `|k|·|v|`; pentru `k < 0` sensul se inversează.', '**Coliniari:** `u = k·v` pentru un număr real k.', 'Relația lui Chasles: `AB + BC = AC`.']],
+      ['p', 'Un **vector** `vec(AB)` are direcție, sens și lungime (modul) `|vec(AB)|`. Doi vectori sunt egali dacă au aceeași direcție, același sens și același modul.'],
+      ['ul', ['**Suma:** regula triunghiului `vec(AB) + vec(BC) = vec(AC)` și regula paralelogramului.', '**Înmulțirea cu un scalar:** `k·vec(v)` are modulul `|k|·|vec(v)|`; pentru `k < 0` sensul se inversează.', '**Coliniari:** `vec(u) = k·vec(v)` pentru un număr real k.', 'Relația lui Chasles: `vec(AB) + vec(BC) = vec(AC)`.']],
       ['h', 'Vectori în coordonate'],
-      ['f', 'AB = (x_B − x_A , y_B − y_A)        |AB| = √((x_B − x_A)² + (y_B − y_A)²)'],
+      ['f', 'vec(AB) = (x_B − x_A , y_B − y_A)        |vec(AB)| = √((x_B − x_A)² + (y_B − y_A)²)'],
       ['ul', ['Adunare pe componente: `(a, b) + (c, d) = (a + c, b + d)`; `k·(a, b) = (ka, kb)`.', 'Mijlocul segmentului AB: `M((x_A + x_B)/2 , (y_A + y_B)/2)`.', 'Centrul de greutate al triunghiului ABC: `G((x_A + x_B + x_C)/3 , (y_A + y_B + y_C)/3)`.', 'Vectorii `(a, b)` și `(c, d)` sunt coliniari ⇔ `a·d − b·c = 0`.']],
-      ['ex', 'A(0, 0), B(3, 4): AB = (3, 4), |AB| = √(9 + 16) = 5, mijlocul = (1,5; 2)'],
+      ['ex', 'A(0, 0), B(3, 4): vec(AB) = (3, 4), |vec(AB)| = √(9 + 16) = 5, mijlocul = (1,5; 2)'],
       ['ex', 'A(0,0), B(6,0), C(0,3) ⇒ G = ((0+6+0)/3 , (0+0+3)/3) = (2, 1)']
     ] },
 
