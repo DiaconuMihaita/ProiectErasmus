@@ -229,7 +229,7 @@
           </aside>
           <div class="card chat">
             <div class="chat-head"><div class="st"><i class="live"></i><span id="mode"></span></div>
-              <div style="display:flex;gap:6px"><button class="btn sm ghost" id="clr">Șterge</button><button class="btn sm ghost" id="cfg">⚙ Setări</button></div></div>
+              <div style="display:flex;gap:6px;align-items:center"><label class="sr" for="depth">Nivel de detaliu</label><select id="depth" class="depth-sel"><option value="short">Scurt</option><option value="detailed">Detaliat</option><option value="deep">Aprofundat</option></select><button class="btn sm ghost" id="clr">Șterge</button><button class="btn sm ghost" id="cfg">⚙ Setări</button></div></div>
             <div class="settings" id="settings">
               <p class="hint">Tutorul local rezolvă ecuații, calcule și algoritmi fără internet. Pentru răspunsuri la orice întrebare, adaugă o cheie gratuită Gemini (de la Google AI Studio). Cheia rămâne doar în browserul tău.</p>
               <div class="field"><label for="gk">Cheie API Gemini</label><input id="gk" type="password" autocomplete="off" placeholder="AIza…"></div>
@@ -244,13 +244,14 @@
       $('#form').onsubmit = e => { e.preventDefault(); const v = $('#inp').value.trim(); if (v) { $('#inp').value = ''; send(v); } };
       $('#cfg').onclick = () => $('#settings').classList.toggle('on');
       $('#ctx').onchange = e => { ctxLesson = e.target.value; };
+      $('#depth').onchange = e => { S.settings.depth = e.target.value; save(); };
       $('#clr').onclick = () => { S.chat = []; save(); drawChat(); };
       $('#gs').onclick = () => { S.settings.key = $('#gk').value.trim(); S.settings.model = $('#gm').value.trim() || 'gemini-2.5-flash'; save(); modeLabel(); $('#settings').classList.remove('on'); toast('✓', S.settings.key ? 'Gemini activat' : 'Folosesc tutorul local'); };
       $('#gc').onclick = () => { S.settings.key = ''; $('#gk').value = ''; save(); modeLabel(); toast('✓', 'Cheia a fost ștearsă'); };
     }
     $('#gk').value = S.settings.key; $('#gm').value = S.settings.model;
     modeLabel(); drawChat();
-    $('#ctx').value = ctxLesson;
+    $('#ctx').value = ctxLesson; $('#depth').value = S.settings.depth || 'detailed';
     if (Tutor.pending) { const p = Tutor.pending; Tutor.pending = null; ctxLesson = p.lessonId || ctxLesson; $('#ctx').value = ctxLesson; send(p.text); }
   };
   let ctxLesson = '';
@@ -270,7 +271,7 @@
     S.chat.push({ r: 'u', t: text }); drawChat();
     const m = $('#msgs'); const ty = document.createElement('div'); ty.className = 'msg a'; ty.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>'; m.append(ty); m.scrollTop = m.scrollHeight;
     const hist = S.chat.map(c => ({ r: c.r, t: c.t }));
-    const [res] = await Promise.all([Tutor.reply(hist, S.settings, { serverAI: serverAI(), lessonId: ctxLesson }), new Promise(r => setTimeout(r, 450))]);
+    const [res] = await Promise.all([Tutor.reply(hist, S.settings, { serverAI: serverAI(), lessonId: ctxLesson, depth: S.settings.depth || 'detailed' }), new Promise(r => setTimeout(r, 450))]);
     S.chat.push({ r: 'a', t: res.text, src: res.src }); if (S.chat.length > 60) S.chat = S.chat.slice(-60);
     const first = S.stats.aiMsgs === 0; S.stats.aiMsgs++;
     if (first) addXP(5);

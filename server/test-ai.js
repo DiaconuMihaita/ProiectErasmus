@@ -97,6 +97,20 @@ const DRAFT = '**Date și ce se cere** ... Răspuns final: x ∈ {2, 3}';
   script = []; for (let i = 0; i < 12; i++) script.push({ status: 503, msg: 'high demand' });
   { let err; try { await ai.ask({ messages: msgs('x'), lang: 'ro' }); } catch (e) { err = e; } ok(err && /high demand/.test(err.message), 'toate modelele supraîncărcate → eroare cu motivul'); }
 
+  // 9g) nivelul de detaliu ajunge în prompt și în limita de tokeni
+  calls = []; script = [{ text: DRAFT }, { text: 'VERDICT: OK' }];
+  await ai.ask({ messages: msgs('explică funcția de gradul II'), lang: 'ro', depth: 'deep' });
+  ok(/APROFUNDAT/.test(calls[0].systemInstruction.parts[0].text) && calls[0].generationConfig.maxOutputTokens === 12000 && /APROFUNDAT/.test(calls[1].contents[0].parts[0].text), 'depth=deep: prompt aprofundat, 12000 tokeni, verificatorul păstrează nivelul');
+  calls = []; script = [{ text: DRAFT }, { text: 'VERDICT: OK' }];
+  await ai.ask({ messages: msgs('ce e un vector?'), lang: 'ro' });
+  ok(/DETALIAT/.test(calls[0].systemInstruction.parts[0].text), 'implicit: nivel detaliat');
+  calls = []; script = [{ text: DRAFT }, { text: 'VERDICT: OK' }];
+  await ai.ask({ messages: msgs('ce e un vector?'), lang: 'ro', depth: 'short' });
+  ok(/SCURT/.test(calls[0].systemInstruction.parts[0].text) && calls[0].generationConfig.maxOutputTokens === 2048, 'depth=short: răspuns scurt');
+  calls = []; script = [{ text: DRAFT }, { text: 'VERDICT: OK' }];
+  await ai.ask({ messages: msgs('x'), lang: 'ro', depth: 'ceva-necunoscut' });
+  ok(/DETALIAT/.test(calls[0].systemInstruction.parts[0].text), 'nivel necunoscut → detaliat');
+
   // 10) verificarea întrebărilor generate
   const qs = [
     { q: '2+2?', o: ['3', '4', '5', '6'], a: 1, e: '' },

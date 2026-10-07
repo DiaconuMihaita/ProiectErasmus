@@ -240,11 +240,12 @@ const Tutor = (() => {
 
   const SYSTEM = () => 'Ești tutorul MathInfo 9, pentru elevi de clasa a IX-a de la Liceul Teoretic „Emil Racoviță” Vaslui. ' + (EN() ? 'Answer in English (the student chose English) and keep standard terminology. ' : 'Răspunzi doar în limba română, clar și prietenos, ') + 'la Matematică (algebră, funcții, geometrie analitică) și Informatică (C++, algoritmi) de clasa a IX-a. Explică pas cu pas, ghidează elevul să înțeleagă (nu doar să copieze rezultatul), folosește exemple scurte și formatare simplă (**bold**, `cod`, liste). Dacă întrebarea nu ține de aceste materii, redirecționează politicos.';
 
-  async function gemini(history, key, model) {
+  const DEPTH_LINE = { short: 'Be concise (max ~150 words).', detailed: 'Be thorough: show every step, explain why, include a check and an example.', deep: 'Give an in-depth lesson-style answer: intuition, exact definitions, full worked solution, an alternative method, a second worked example, common mistakes and 2–3 practice exercises with answers at the end.' };
+  async function gemini(history, key, model, depth) {
     const contents = history.slice(-12).map(m => ({ role: m.r === 'u' ? 'user' : 'model', parts: [{ text: m.t }] }));
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM() }] }, contents })
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM() + ' ' + (DEPTH_LINE[depth] || DEPTH_LINE.detailed) }] }, contents })
     });
     if (!res.ok) {
       let msg = res.status + ''; try { msg = (await res.json()).error.message; } catch (e) { /* ignore */ }
@@ -260,10 +261,10 @@ const Tutor = (() => {
     return `**${l.title}** — ${T('din lecție', 'from the lesson')}:\n\n` + l.body.map(([t, c]) => t === 'h' ? `**${c}**` : t === 'ul' ? c.map(x => '- ' + x).join('\n') : t === 'code' ? '```\n' + c + '\n```' : c).join('\n\n');
   }
 
-  async function serverAI(history, lessonId) {
+  async function serverAI(history, lessonId, depth) {
     const r = await fetch('/api/ai', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...(API.st.token ? { Authorization: 'Bearer ' + API.st.token } : {}) },
-      body: JSON.stringify({ messages: history.slice(-12), lessonId: lessonId || null, lang: EN() ? 'en' : 'ro' }), signal: AbortSignal.timeout(62000)
+      body: JSON.stringify({ messages: history.slice(-12), lessonId: lessonId || null, lang: EN() ? 'en' : 'ro', depth: depth || 'detailed' }), signal: AbortSignal.timeout(62000)
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(I18N.tx(j.error || (T('eroare ', 'error ') + r.status)));
@@ -280,14 +281,14 @@ const Tutor = (() => {
       let note = '';
       if (opts.serverAI) {
         try {
-          const j = await serverAI(history, opts.lessonId);
+          const j = await serverAI(history, opts.lessonId, opts.depth);
           const tag = j.src === 'verified' ? T(' · verificat ✓', ' · verified ✓') : j.src === 'corrected' ? T(' · corectat la verificare ✓', ' · corrected on review ✓') : '';
           return { text: j.text, src: 'AI' + tag + (opts.lessonId ? T(' · cu lecția', ' · with the lesson') : '') };
         }
         catch (e) { note = e.message; }
       }
       if (settings.key) {
-        try { return { text: await gemini(history, settings.key, settings.model || 'gemini-2.5-flash'), src: 'Gemini' }; }
+        try { return { text: await gemini(history, settings.key, settings.model || 'gemini-2.5-flash', opts.depth), src: 'Gemini' }; }
         catch (e) { note = e.message; }
       }
       if (!loc && opts.lessonId) {

@@ -42,6 +42,7 @@ const I18N = (() => {
     'Scrie o ecuație, un calcul sau o nelămurire. Rezolv pas cu pas și îți explic de ce.': 'Type an equation, a calculation or a question. I solve step by step and explain why.',
     'Întreabă despre lecție': 'Ask about a lesson', 'Lecție': 'Lesson', 'Orice subiect': 'Any topic',
     'Alege o lecție și AI-ul răspunde pornind de la ea.': 'Pick a lesson and the AI answers based on it.',
+    'Nivel de detaliu': 'Level of detail', 'Scurt': 'Short', 'Detaliat': 'Detailed', 'Aprofundat': 'In-depth',
     'Încearcă': 'Try', 'Șterge': 'Clear', '⚙ Setări': '⚙ Settings', 'Mesaj': 'Message', 'Trimite': 'Send',
     'Scrie aici… ex: x^2 - 4x + 3 = 0': 'Type here… e.g. x^2 - 4x + 3 = 0',
     'Tutorul local rezolvă ecuații, calcule și algoritmi fără internet. Pentru răspunsuri la orice întrebare, adaugă o cheie gratuită Gemini (de la Google AI Studio). Cheia rămâne doar în browserul tău.': 'The local tutor solves equations, calculations and algorithms offline. For answers to any question, add a free Gemini key (from Google AI Studio). The key stays only in your browser.',
