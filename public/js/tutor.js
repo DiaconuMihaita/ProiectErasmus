@@ -171,6 +171,125 @@ const Tutor = (() => {
     return `**${str}₂ ${T('în baza 10', 'in base 10')}**\n\n${terms.join(' + ')}\n= ${terms.map(t => Math.pow(2, +t.slice(2))).join(' + ')}\n= **${parseInt(str, 2)}**`;
   }
 
+  /* ---------- rezolvări locale suplimentare: funcție, inecuații, progresii, trigonometrie ---------- */
+  const norm = s => s.toLowerCase().replace(/−|–/g, '-').replace(/²/g, '^2').replace(/₁/g, '1').replace(/₂/g, '2').replace(/,/g, '.').replace(/\s+/g, '');
+  const num = s => parseFloat(String(s).replace(',', '.'));
+  const interval = (lo, hi, loClosed, hiClosed) => (lo === null ? '(−∞' : (loClosed ? '[' : '(') + fmt(lo)) + ', ' + (hi === null ? '∞)' : fmt(hi) + (hiClosed ? ']' : ')'));
+  const evalPoly = (c, x) => c[2] * x * x + c[1] * x + c[0];
+
+  /** f(x) = ... : analiză completă (gradul I sau II) + valori f(n) cerute. */
+  function analyzeFunction(text) {
+    const n = norm(text), m0 = /(?:^|[^a-zăâîșț])([fgh])\s*\(\s*x\s*\)\s*=\s*([0-9x²^+\-−–*.,\s]+)/i.exec(text.toLowerCase());
+    if (!m0) return null;
+    const m = [null, m0[1], norm(m0[2]).replace(/\.$/, '')];
+    const c = parsePoly(m[2]); if (!c) return null;
+    const [c0, c1, c2] = c, name = m[1];
+    const vals = [...n.matchAll(new RegExp(name + '\\((-?\\d+(?:\\.\\d+)?)\\)', 'g'))].map(x => parseFloat(x[1])).slice(0, 4);
+    const valLines = vals.map(v => `**${name}(${fmt(v)}) = ${fmt(evalPoly(c, v))}**`).join('\n');
+    const head = `**${T('Funcția', 'The function')} ${name}(x) = ${poly(c2, c1, c0).replace(/ = 0$/, '')}**`;
+    if (c2 === 0) {
+      if (c1 === 0) return null;
+      const root = -c0 / c1;
+      return head + T(` (gradul I)\n\n1. Panta a = ${fmt(c1)}, ordonata la origine b = ${fmt(c0)}\n2. Graficul este o dreaptă ${c1 > 0 ? 'strict **crescătoare**' : 'strict **descrescătoare**'}\n3. Intersecția cu Ox: ${fmt(c1)}x + ${par(c0)} = 0 → x = ${fmt(root)}, punctul (${fmt(root)}, 0)\n4. Intersecția cu Oy: (0, ${fmt(c0)})\n5. Semn: ${name}(x) ${c1 > 0 ? '> 0 pentru x > ' : '> 0 pentru x < '}${fmt(root)}${vals.length ? '\n\n' + valLines : ''}`,
+        ` (linear)\n\n1. Slope a = ${fmt(c1)}, y-intercept b = ${fmt(c0)}\n2. The graph is a line, strictly **${c1 > 0 ? 'increasing' : 'decreasing'}**\n3. Intersection with Ox: ${fmt(c1)}x + ${par(c0)} = 0 → x = ${fmt(root)}, the point (${fmt(root)}, 0)\n4. Intersection with Oy: (0, ${fmt(c0)})\n5. Sign: ${name}(x) ${c1 > 0 ? '> 0 for x > ' : '> 0 for x < '}${fmt(root)}${vals.length ? '\n\n' + valLines : ''}`);
+    }
+    const d = c1 * c1 - 4 * c2 * c0, vx = -c1 / (2 * c2), vy = -d / (4 * c2), up = c2 > 0;
+    let rootsRo, rootsEn, sign;
+    if (d > 0) {
+      const sq = Math.sqrt(d), r1 = Math.min((-c1 - sq) / (2 * c2), (-c1 + sq) / (2 * c2)), r2 = Math.max((-c1 - sq) / (2 * c2), (-c1 + sq) / (2 * c2));
+      rootsRo = `x = (${fmt(-c1)} ± ${Number.isInteger(sq) ? fmt(sq) : '√' + fmt(d)})/${fmt(2 * c2)} → x₁ = ${fmt(r1)}, x₂ = ${fmt(r2)}`; rootsEn = rootsRo;
+      sign = [T(`${name}(x) ${up ? '>' : '<'} 0 pentru x ∈ (−∞, ${fmt(r1)}) ∪ (${fmt(r2)}, ∞); ${name}(x) ${up ? '<' : '>'} 0 pentru x ∈ (${fmt(r1)}, ${fmt(r2)})`,
+        `${name}(x) ${up ? '>' : '<'} 0 for x ∈ (−∞, ${fmt(r1)}) ∪ (${fmt(r2)}, ∞); ${name}(x) ${up ? '<' : '>'} 0 for x ∈ (${fmt(r1)}, ${fmt(r2)})`)];
+    } else if (d === 0) {
+      rootsRo = `x = ${fmt(vx)} (${T('rădăcină dublă', 'double root')})`; rootsEn = rootsRo;
+      sign = [T(`${name}(x) ${up ? '≥' : '≤'} 0 pentru orice x, cu egalitate doar în x = ${fmt(vx)}`, `${name}(x) ${up ? '≥' : '≤'} 0 for every x, with equality only at x = ${fmt(vx)}`)];
+    } else {
+      rootsRo = T('nu are rădăcini reale (graficul nu taie axa Ox)', 'no real roots (the graph does not cross Ox)'); rootsEn = rootsRo;
+      sign = [T(`${name}(x) ${up ? '> 0' : '< 0'} pentru orice x`, `${name}(x) ${up ? '> 0' : '< 0'} for every x`)];
+    }
+    return head + T(` (gradul II)\n\n1. a = ${fmt(c2)}, b = ${fmt(c1)}, c = ${fmt(c0)} → parabola are ramurile în ${up ? 'sus (a > 0)' : 'jos (a < 0)'}\n2. Δ = b² − 4ac = ${par(c1)}² − 4·${par(c2)}·${par(c0)} = ${fmt(d)}\n3. Rădăcinile (intersecția cu Ox): ${rootsRo}\n4. Intersecția cu Oy: (0, ${fmt(c0)})\n5. Vârful: V(−b/2a, −Δ/4a) = V(${fmt(vx)}, ${fmt(vy)})\n6. ${up ? 'Minim' : 'Maxim'} ${fmt(vy)} în x = ${fmt(vx)}; imaginea: ${up ? interval(vy, null, true, false) : interval(null, vy, false, true)}\n7. Monotonie: ${up ? 'descrescătoare pe (−∞, ' + fmt(vx) + '], crescătoare pe [' + fmt(vx) + ', ∞)' : 'crescătoare pe (−∞, ' + fmt(vx) + '], descrescătoare pe [' + fmt(vx) + ', ∞)'}\n8. Semn: ${sign[0]}${vals.length ? '\n\n' + valLines : ''}`,
+      ` (quadratic)\n\n1. a = ${fmt(c2)}, b = ${fmt(c1)}, c = ${fmt(c0)} → the parabola opens ${up ? 'upward (a > 0)' : 'downward (a < 0)'}\n2. Δ = b² − 4ac = ${par(c1)}² − 4·${par(c2)}·${par(c0)} = ${fmt(d)}\n3. Roots (intersection with Ox): ${rootsEn}\n4. Intersection with Oy: (0, ${fmt(c0)})\n5. Vertex: V(−b/2a, −Δ/4a) = V(${fmt(vx)}, ${fmt(vy)})\n6. ${up ? 'Minimum' : 'Maximum'} ${fmt(vy)} at x = ${fmt(vx)}; image: ${up ? interval(vy, null, true, false) : interval(null, vy, false, true)}\n7. Monotonicity: ${up ? 'decreasing on (−∞, ' + fmt(vx) + '], increasing on [' + fmt(vx) + ', ∞)' : 'increasing on (−∞, ' + fmt(vx) + '], decreasing on [' + fmt(vx) + ', ∞)'}\n8. Sign: ${sign[0]}${vals.length ? '\n\n' + valLines : ''}`);
+  }
+
+  /** Inecuații de gradul I și II: ax²+bx+c ⋚ 0 (cu orice membru drept). */
+  function solveInequality(text) {
+    let t = norm(text).replace(/≤/g, '<=').replace(/≥/g, '>=');
+    t = t.replace(/^(rezolva|rezolvă|solve|inecuatia|inequality)[:]?/, '');
+    const m = /^([0-9x+\-*^.]+)(<=|>=|<|>)([0-9x+\-*^.]+)$/.exec(t); if (!m) return null;
+    const L = parsePoly(m[1]), R = parsePoly(m[3]); if (!L || !R || (!m[1].includes('x') && !m[3].includes('x'))) return null;
+    const rel = m[2], c = L[0] - R[0], b = L[1] - R[1], a = L[2] - R[2];
+    const strict = rel.length === 1, gt = rel[0] === '>', relTxt = rel.replace('<=', '≤').replace('>=', '≥');
+    const head = T(`**Inecuația** \`${poly(a, b, c).replace(/ = 0$/, '')} ${relTxt} 0\`\n\n`, `**The inequality** \`${poly(a, b, c).replace(/ = 0$/, '')} ${relTxt} 0\`\n\n`);
+    const fin = v => T(`Soluția: **x ∈ ${v}**`, `Solution: **x ∈ ${v}**`);
+    if (a === 0) {
+      if (b === 0) { const ok = gt ? (strict ? c > 0 : c >= 0) : (strict ? c < 0 : c <= 0); return head + (ok ? T('Este adevărată pentru orice x: **x ∈ ℝ**', 'It is true for every x: **x ∈ ℝ**') : T('Nu are soluții: **x ∈ ∅**', 'It has no solutions: **x ∈ ∅**')); }
+      const root = -c / b, flip = b < 0, wantGreater = gt !== flip;
+      const set = wantGreater ? interval(root, null, !strict, false) : interval(null, root, false, !strict);
+      return head + T(`1. ${fmt(b)}x ${c < 0 ? '−' : '+'} ${fmt(Math.abs(c))} ${relTxt} 0 → ${fmt(b)}x ${relTxt} ${fmt(-c)}\n2. ${flip ? 'Împart la ' + fmt(b) + ' < 0, deci **inversez sensul** inegalității' : 'Împart la ' + fmt(b) + ' > 0, sensul rămâne'} → x ${wantGreater ? (strict ? '>' : '≥') : (strict ? '<' : '≤')} ${fmt(root)}\n3. ${fin(set)}`,
+        `1. ${fmt(b)}x ${c < 0 ? '−' : '+'} ${fmt(Math.abs(c))} ${relTxt} 0 → ${fmt(b)}x ${relTxt} ${fmt(-c)}\n2. ${flip ? 'Dividing by ' + fmt(b) + ' < 0, so I **reverse the direction** of the inequality' : 'Dividing by ' + fmt(b) + ' > 0, the direction stays'} → x ${wantGreater ? (strict ? '>' : '≥') : (strict ? '<' : '≤')} ${fmt(root)}\n3. ${fin(set)}`);
+    }
+    const d = b * b - 4 * a * c, up = a > 0;
+    const pos = gt, step1 = T(`1. Ecuația asociată \`${poly(a, b, c)}\`: Δ = ${par(b)}² − 4·${par(a)}·${par(c)} = ${fmt(d)}\n`, `1. Associated equation \`${poly(a, b, c)}\`: Δ = ${par(b)}² − 4·${par(a)}·${par(c)} = ${fmt(d)}\n`);
+    if (d > 0) {
+      const sq = Math.sqrt(d), r1 = Math.min((-b - sq) / (2 * a), (-b + sq) / (2 * a)), r2 = Math.max((-b - sq) / (2 * a), (-b + sq) / (2 * a));
+      // f > 0 în afara rădăcinilor dacă a > 0; între rădăcini dacă a < 0
+      const outside = pos === up;
+      const set = outside ? `(−∞, ${fmt(r1)}${strict ? ')' : ']'} ∪ ${strict ? '(' : '['}${fmt(r2)}, ∞)` : `${strict ? '(' : '['}${fmt(r1)}, ${fmt(r2)}${strict ? ')' : ']'}`;
+      return head + step1 + T(`2. Rădăcinile: x₁ = ${fmt(r1)}, x₂ = ${fmt(r2)}\n3. Semnul: a = ${fmt(a)} ${up ? '> 0' : '< 0'} → funcția are semnul lui a în afara rădăcinilor și semn contrar între ele\n4. ${fin(set)}`,
+        `2. Roots: x₁ = ${fmt(r1)}, x₂ = ${fmt(r2)}\n3. Sign: a = ${fmt(a)} ${up ? '> 0' : '< 0'} → the function has the sign of a outside the roots and the opposite sign between them\n4. ${fin(set)}`);
+    }
+    if (d === 0) {
+      const x0 = -b / (2 * a); let set;
+      if (up) set = pos ? (strict ? `ℝ \\ {${fmt(x0)}}` : 'ℝ') : (strict ? '∅' : `{${fmt(x0)}}`); else set = pos ? (strict ? '∅' : `{${fmt(x0)}}`) : (strict ? `ℝ \\ {${fmt(x0)}}` : 'ℝ');
+      return head + step1 + T(`2. Rădăcină dublă x = ${fmt(x0)}; funcția are mereu semnul lui a (≠ 0 doar în rădăcină)\n3. ${fin(set)}`, `2. Double root x = ${fmt(x0)}; the function always has the sign of a (zero only at the root)\n3. ${fin(set)}`);
+    }
+    const all = (pos && up) || (!pos && !up), set = all ? 'ℝ' : '∅';
+    return head + step1 + T(`2. Δ < 0 → fără rădăcini reale; funcția are semnul lui a (${up ? 'pozitiv' : 'negativ'}) pentru orice x\n3. ${fin(set)}`, `2. Δ < 0 → no real roots; the function has the sign of a (${up ? 'positive' : 'negative'}) for every x\n3. ${fin(set)}`);
+  }
+
+  /** Progresii aritmetice / geometrice: termenul general și suma primilor n termeni. */
+  function solveProgression(text) {
+    const n0 = norm(text), pick = re => { const m = re.exec(n0); return m ? parseFloat(m[1]) : null; };
+    const nTerms = pick(/(?:n=|primii|primilor|first)(\d+)/) ?? pick(/a(?:_?n)?\((\d+)\)/);
+    const geo = /geometri/.test(strip(text)) || (/b1=/.test(n0) && /q=/.test(n0));
+    const ar = /aritmetic|arithmetic/.test(strip(text)) || (/a1=/.test(n0) && /r=/.test(n0));
+    if (!geo && !ar) return null;
+    const idx = pick(/(?:[ab]_?)(\d+)(?:\?|$|=\?)/) ?? nTerms;
+    if (geo) {
+      const b1 = pick(/b1=(-?\d+(?:\.\d+)?)/) ?? pick(/primul(?:termen)?=(-?\d+(?:\.\d+)?)/), q = pick(/q=(-?\d+(?:\.\d+)?)/);
+      if (b1 === null || q === null) return null;
+      const n = Math.round(nTerms ?? idx ?? 5); if (n < 1 || n > 60) return null;
+      const bn = b1 * Math.pow(q, n - 1), S = q === 1 ? n * b1 : b1 * (Math.pow(q, n) - 1) / (q - 1);
+      return T(`**Progresie geometrică** cu b₁ = ${fmt(b1)}, q = ${fmt(q)}, n = ${n}\n\n1. Termenul general: bₙ = b₁·qⁿ⁻¹ → b${n} = ${fmt(b1)}·${par(q)}^${n - 1} = **${fmt(bn)}**\n2. Suma: Sₙ = ${q === 1 ? 'n·b₁' : 'b₁·(qⁿ − 1)/(q − 1)'} = ${q === 1 ? `${n}·${fmt(b1)}` : `${fmt(b1)}·(${par(q)}^${n} − 1)/(${par(q)} − 1)`} = **${fmt(S)}**\n3. Primii termeni: ${Array.from({ length: Math.min(n, 6) }, (_, i) => fmt(b1 * Math.pow(q, i))).join(', ')}${n > 6 ? ', …' : ''}`,
+        `**Geometric progression** with b₁ = ${fmt(b1)}, q = ${fmt(q)}, n = ${n}\n\n1. General term: bₙ = b₁·qⁿ⁻¹ → b${n} = ${fmt(b1)}·${par(q)}^${n - 1} = **${fmt(bn)}**\n2. Sum: Sₙ = ${q === 1 ? 'n·b₁' : 'b₁·(qⁿ − 1)/(q − 1)'} = ${q === 1 ? `${n}·${fmt(b1)}` : `${fmt(b1)}·(${par(q)}^${n} − 1)/(${par(q)} − 1)`} = **${fmt(S)}**\n3. First terms: ${Array.from({ length: Math.min(n, 6) }, (_, i) => fmt(b1 * Math.pow(q, i))).join(', ')}${n > 6 ? ', …' : ''}`);
+    }
+    const a1 = pick(/a1=(-?\d+(?:\.\d+)?)/) ?? pick(/primul(?:termen)?=(-?\d+(?:\.\d+)?)/), r = pick(/r=(-?\d+(?:\.\d+)?)/);
+    if (a1 === null || r === null) return null;
+    const n = Math.round(nTerms ?? idx ?? 5); if (n < 1 || n > 100000) return null;
+    const an = a1 + (n - 1) * r, S = n * (a1 + an) / 2;
+    return T(`**Progresie aritmetică** cu a₁ = ${fmt(a1)}, r = ${fmt(r)}, n = ${n}\n\n1. Termenul general: aₙ = a₁ + (n − 1)·r → a${n} = ${fmt(a1)} + ${n - 1}·${par(r)} = **${fmt(an)}**\n2. Suma: Sₙ = n·(a₁ + aₙ)/2 = ${n}·(${fmt(a1)} + ${par(an)})/2 = **${fmt(S)}**\n3. Primii termeni: ${Array.from({ length: Math.min(n, 6) }, (_, i) => fmt(a1 + i * r)).join(', ')}${n > 6 ? ', …' : ''}`,
+      `**Arithmetic progression** with a₁ = ${fmt(a1)}, r = ${fmt(r)}, n = ${n}\n\n1. General term: aₙ = a₁ + (n − 1)·r → a${n} = ${fmt(a1)} + ${n - 1}·${par(r)} = **${fmt(an)}**\n2. Sum: Sₙ = n·(a₁ + aₙ)/2 = ${n}·(${fmt(a1)} + ${par(an)})/2 = **${fmt(S)}**\n3. First terms: ${Array.from({ length: Math.min(n, 6) }, (_, i) => fmt(a1 + i * r)).join(', ')}${n > 6 ? ', …' : ''}`);
+  }
+
+  /** sin / cos / tg / ctg pentru unghiuri multiple de 30° și 45° (0°–360°), cu reducere la primul cadran. */
+  const TRIG = { sin: { 0: '0', 30: '1/2', 45: '√2/2', 60: '√3/2', 90: '1' }, cos: { 0: '1', 30: '√3/2', 45: '√2/2', 60: '1/2', 90: '0' }, tg: { 0: '0', 30: '√3/3', 45: '1', 60: '√3', 90: null }, ctg: { 0: null, 30: '√3', 45: '1', 60: '√3/3', 90: '0' } };
+  function trigValue(text) {
+    const m = /\b(sin|cos|tg|tan|ctg|cot)\s*\(?\s*(\d{1,3})\s*(?:°|º|grade|degrees|deg)?\s*\)?/i.exec(text.replace(/\s+/g, ' ')); if (!m) return null;
+    const fn = { tan: 'tg', cot: 'ctg' }[m[1].toLowerCase()] || m[1].toLowerCase(), A = parseInt(m[2], 10); if (A > 360) return null;
+    let ref, neg, how;
+    if (A <= 90) { ref = A; neg = false; how = ''; }
+    else if (A <= 180) { ref = 180 - A; neg = fn !== 'sin'; how = `${fn}(180° − ${ref}°)`; }
+    else if (A <= 270) { ref = A - 180; neg = fn === 'sin' || fn === 'cos'; how = `${fn}(180° + ${ref}°)`; }
+    else { ref = 360 - A; neg = fn !== 'cos'; how = `${fn}(360° − ${ref}°)`; }
+    if (!(ref in TRIG[fn])) return null;
+    const base = TRIG[fn][ref];
+    if (base === null) return T(`**${fn} ${A}° nu este definit** (împărțire la 0).`, `**${fn} ${A}° is undefined** (division by zero).`);
+    const val = (neg && base !== '0' ? '−' : '') + base;
+    const sgnWhy = how ? T(`\n\nSemnul: în cadranul ${A <= 180 ? 'II' : A <= 270 ? 'III' : 'IV'}, ${fn} este ${neg ? 'negativ' : 'pozitiv'}.`, `\n\nSign: in quadrant ${A <= 180 ? 'II' : A <= 270 ? 'III' : 'IV'}, ${fn} is ${neg ? 'negative' : 'positive'}.`) : '';
+    return `**${fn} ${A}° = ${val}**\n\n` + (how ? `${fn} ${A}° = ${how} = ${neg && base !== '0' ? '−' : ''}${fn} ${ref}° = **${val}**` : T(`Valoare remarcabilă: ${fn} ${A}° = **${val}**`, `Special value: ${fn} ${A}° = **${val}**`)) + sgnWhy
+      + T(`\n\nTabel: sin 30° = 1/2, sin 45° = √2/2, sin 60° = √3/2; cos 30° = √3/2, cos 45° = √2/2, cos 60° = 1/2; tg 30° = √3/3, tg 45° = 1, tg 60° = √3.`, `\n\nTable: sin 30° = 1/2, sin 45° = √2/2, sin 60° = √3/2; cos 30° = √3/2, cos 45° = √2/2, cos 60° = 1/2; tg 30° = √3/3, tg 45° = 1, tg 60° = √3.`);
+  }
+
   /* ---------- rutare locală ---------- */
   let kbHit = false;
   function local(raw) {
@@ -186,6 +305,10 @@ const Tutor = (() => {
 
     const eq = solveEquation(text);
     if (eq) return eq;
+    const fa = analyzeFunction(text); if (fa) return fa;
+    const ineq = solveInequality(text); if (ineq) return ineq;
+    const prog = solveProgression(text); if (prog) return prog;
+    const trig = trigValue(text); if (trig) return trig;
 
     if (/cmmdc|gcd|cel mai mare divizor|cmmmc|lcm|greatest common/.test(t) && n.length >= 2 && n.every(x => Number.isInteger(x) && x > 0))
       return euclid(Math.max(n[0], n[1]), Math.min(n[0], n[1]));
@@ -271,6 +394,61 @@ const Tutor = (() => {
     return j;
   }
 
+  /** Răspuns în flux: draftul ajunge imediat (onDraft), apoi verdictul verificării. */
+  async function serverAIStream(history, lessonId, depth, onDraft) {
+    const r = await fetch('/api/ai/stream', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(API.st.token ? { Authorization: 'Bearer ' + API.st.token } : {}) },
+      body: JSON.stringify({ messages: history.slice(-12), lessonId: lessonId || null, lang: EN() ? 'en' : 'ro', depth: depth || 'detailed' }), signal: AbortSignal.timeout(65000)
+    });
+    if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(I18N.tx(j.error || (T('eroare ', 'error ') + r.status))); }
+    const reader = r.body.getReader(), dec = new TextDecoder(); let buf = '', final = null, draft = null;
+    for (;;) {
+      const { value, done } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true }); let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (!line) continue;
+        let ev; try { ev = JSON.parse(line); } catch (e) { continue; }
+        if (ev.type === 'draft') { draft = ev.text; if (onDraft) onDraft(ev.text); }
+        else if (ev.type === 'final') final = ev;
+        else if (ev.type === 'error') { if (draft) final = { text: draft, src: 'draft' }; else throw new Error(I18N.tx(ev.error)); }
+      }
+    }
+    if (!final && draft) final = { text: draft, src: 'draft' };
+    if (!final) throw new Error(T('răspuns incomplet', 'incomplete answer'));
+    return final;
+  }
+  const srcTag = j => (j.src === 'verified' ? T(' · verificat ✓', ' · verified ✓') : j.src === 'corrected' ? T(' · corectat la verificare ✓', ' · corrected on review ✓') : '');
+
+  /** Doar rezolvarea locală (instant): { text, exact, src } sau null. */
+  function localInfo(text) {
+    qlang = detectLang(text);
+    const loc = local(text);
+    if (!loc) return null;
+    return { text: loc, exact: !kbHit, src: T('Local · răspuns instant', 'Local · instant answer'), lang: qlang || I18N.lang };
+  }
+
+  /** Doar calea AI (server în flux → cheie proprie → text de rezervă). Nu aruncă erori: returnează { text, src, ok }. */
+  async function ai(history, settings, opts = {}) {
+    const last = history[history.length - 1].t;
+    qlang = detectLang(last);
+    let note = '';
+    if (opts.serverAI) {
+      try {
+        const j = await serverAIStream(history, opts.lessonId, opts.depth, opts.onDraft);
+        return { text: j.text, src: 'AI' + srcTag(j) + (opts.lessonId ? T(' · cu lecția', ' · with the lesson') : ''), ok: true };
+      } catch (e) { note = e.message; }
+    }
+    if (settings.key) {
+      try { return { text: await gemini(history, settings.key, settings.model || 'gemini-2.5-flash', opts.depth), src: 'Gemini', ok: true }; }
+      catch (e) { note = e.message; }
+    }
+    const tail = note ? T('\n\n_AI indisponibil (' + note + ')._', '\n\n_AI unavailable (' + note + ')._') : '';
+    if (opts.more) return { text: T('Nu am putut obține explicația detaliată de la AI acum. Încearcă din nou în câteva momente.', 'I could not get the detailed AI explanation right now. Please try again in a moment.') + tail, src: 'Local', ok: false };
+    if (opts.fallbackLocal) return { text: opts.fallbackLocal + tail, src: T('Local · răspuns instant', 'Local · instant answer'), ok: false };
+    if (opts.lessonId) { const l = LESSONS.find(x => x.id === opts.lessonId); if (l) return { text: lessonMd(l) + tail, src: T('Local · lecția', 'Local · lesson'), ok: false }; }
+    return { text: FALLBACK() + tail, src: 'Local', ok: false };
+  }
+
   /* Ordine: calcul exact local → AI server → cheie proprie Gemini → bază locală → lecția curentă */
   async function reply(history, settings, opts = {}) {
     const last = history[history.length - 1].t;
@@ -300,5 +478,5 @@ const Tutor = (() => {
     return { text: loc, src: T('Local · calcul exact', 'Local · exact calculation') };
   }
 
-  return { reply, local, evaluate, gcd, toBinary };
+  return { reply, local, localInfo, ai, evaluate, gcd, toBinary };
 })();

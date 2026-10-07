@@ -18,14 +18,23 @@
       t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>')
         .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
         .replace(/(^|\s)_([^_\n]+)_(?=\s|$|[.,])/g, '$1<i>$2</i>');
-      const lines = t.split('\n'); let html = '', inList = false;
+      const lines = t.split('\n'); let html = '', inList = false, tbl = [];
+      const flushTbl = () => {
+        if (!tbl.length) return;
+        const rows = tbl.filter(r => !/^\|[\s:|-]+\|?$/.test(r.trim())).map(r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+        html += '<table><thead><tr>' + rows[0].map(c => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>' + rows.slice(1).map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+        tbl = [];
+      };
       for (const ln of lines) {
+        if (/^\s*\|.*\|\s*$/.test(ln)) { if (inList) { html += '</ul>'; inList = false; } tbl.push(ln); continue; }
+        flushTbl();
         const li = /^\s*(?:[-*]|\d+\.)\s+(.*)$/.exec(ln);
         if (li) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + li[1] + '</li>'; }
         else { if (inList) { html += '</ul>'; inList = false; } html += ln + '<br>'; }
       }
+      flushTbl();
       if (inList) html += '</ul>';
-      return html.replace(/(<br>)+$/, '').replace(/<\/ul><br>/g, '</ul>');
+      return html.replace(/(<br>)+$/, '').replace(/<\/(ul|table)><br>/g, '</$1>').replace(/<br><(table|ul)>/g, '<$1>');
     }).join('');
   }
 
@@ -244,6 +253,12 @@
       $('#form').onsubmit = e => { e.preventDefault(); const v = $('#inp').value.trim(); if (v) { $('#inp').value = ''; send(v); } };
       $('#cfg').onclick = () => $('#settings').classList.toggle('on');
       $('#ctx').onchange = e => { ctxLesson = e.target.value; };
+      $('#msgs').addEventListener('click', e => {
+        const b = e.target.closest('.more'); if (!b) return;
+        const c = S.chat[+b.dataset.i]; if (!c || !c.more || busy) return;
+        const q = c.more; delete c.more; save();
+        send(I18N.t('Explică mai amănunțit: ', 'Explain in more detail: ') + q, { forceAI: true, q });
+      });
       $('#depth').onchange = e => { S.settings.depth = e.target.value; save(); };
       $('#clr').onclick = () => { S.chat = []; save(); drawChat(); };
       $('#gs').onclick = () => { S.settings.key = $('#gk').value.trim(); S.settings.model = $('#gm').value.trim() || 'gemini-2.5-flash'; save(); modeLabel(); $('#settings').classList.remove('on'); toast('✓', S.settings.key ? 'Gemini activat' : 'Folosesc tutorul local'); };
@@ -262,17 +277,34 @@
     if (!S.chat.length) {
       m.innerHTML = `<div class="msg a">${I18N.t('Salut', 'Hi')}${S.name ? ', ' + esc(S.name) : ''}! ${I18N.t('Sunt tutorul MathInfo 9. Încearcă una dintre sugestii sau scrie liber: o ecuație, un calcul sau „explică-mi for-ul în C++”.', 'I am the MathInfo 9 tutor. Try one of the suggestions or type freely: an equation, a calculation or “explain the for loop in C++”.')}</div>`;
     } else {
-      m.innerHTML = S.chat.map(c => `<div class="msg ${c.r}">${c.r === 'u' ? esc(c.t) : md(c.t)}${c.src ? `<span class="src">${esc(c.src)}</span>` : ''}</div>`).join('');
+      m.innerHTML = S.chat.map((c, i) => `<div class="msg ${c.r}">${c.r === 'u' ? esc(c.t) : md(c.t)}${c.src ? `<span class="src">${esc(c.src)}</span>` : ''}${c.more ? `<button class="btn sm ghost more" data-i="${i}">${I18N.t('Explicație detaliată cu AI', 'Detailed explanation with AI')}</button>` : ''}</div>`).join('');
     }
     m.scrollTop = m.scrollHeight;
   }
-  async function send(text) {
+  async function send(text, o = {}) {
     if (busy) return; busy = true;
     S.chat.push({ r: 'u', t: text }); drawChat();
-    const m = $('#msgs'); const ty = document.createElement('div'); ty.className = 'msg a'; ty.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>'; m.append(ty); m.scrollTop = m.scrollHeight;
-    const hist = S.chat.map(c => ({ r: c.r, t: c.t }));
-    const [res] = await Promise.all([Tutor.reply(hist, S.settings, { serverAI: serverAI(), lessonId: ctxLesson, depth: S.settings.depth || 'detailed' }), new Promise(r => setTimeout(r, 450))]);
-    S.chat.push({ r: 'a', t: res.text, src: res.src }); if (S.chat.length > 60) S.chat = S.chat.slice(-60);
+    const li = o.forceAI ? null : Tutor.localInfo(o.q || text);
+    const canAI = serverAI() || !!S.settings.key, depth = S.settings.depth || 'detailed';
+    const m = $('#msgs');
+    let msg;
+    if (li && (li.exact || depth !== 'deep')) {
+      // răspuns local instant (corect și cu pași); AI-ul detaliat este opțional, la cerere
+      msg = { r: 'a', t: li.text, src: li.src, more: canAI ? (o.q || text) : undefined };
+      await new Promise(r => setTimeout(r, 120));
+    } else {
+      const bubble = document.createElement('div'); bubble.className = 'msg a';
+      bubble.innerHTML = `<span class="typing"><i></i><i></i><i></i></span><span class="src">${esc(I18N.t('se pregătește răspunsul…', 'preparing the answer…'))}</span>`;
+      m.append(bubble); m.scrollTop = m.scrollHeight;
+      const hist = S.chat.map(c => ({ r: c.r, t: c.t }));
+      const res = await Tutor.ai(hist, S.settings, {
+        serverAI: serverAI(), lessonId: ctxLesson, depth, fallbackLocal: li && li.text, more: !!o.forceAI,
+        onDraft: t => { bubble.innerHTML = md(t) + `<span class="src">${esc(I18N.t('se verifică răspunsul…', 'verifying the answer…'))}</span>`; if (current === 'tutor') m.scrollTop = m.scrollHeight; }
+      });
+      msg = { r: 'a', t: res.text, src: res.src };
+      if (o.forceAI && !res.ok && canAI) msg.more = o.q;   // reîncercare posibilă
+    }
+    S.chat.push(msg); if (S.chat.length > 60) S.chat = S.chat.slice(-60);
     const first = S.stats.aiMsgs === 0; S.stats.aiMsgs++;
     if (first) addXP(5);
     busy = false; checkBadges(); if (current === 'tutor') drawChat();

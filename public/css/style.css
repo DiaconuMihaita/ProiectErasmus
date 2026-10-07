@@ -603,3 +603,10 @@ textarea { font: inherit; padding: 11px 14px; border-radius: 12px; border: 1px s
 
 .depth-sel { width: auto; padding: 7px 10px; font-size: 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 500; }
 .depth-sel:hover { border-color: var(--ink); }
+
+/* chat: tabele și butonul „explicație detaliată” */
+.msg table { border-collapse: collapse; margin: 8px 0; font-size: 14px; display: block; overflow-x: auto; max-width: 100%; }
+.msg th, .msg td { border: 1px solid var(--line); padding: 5px 10px; text-align: center; white-space: nowrap; }
+.msg th { background: color-mix(in srgb, var(--ink) 8%, transparent); font-weight: 600; }
+.msg .more { margin-top: 12px; }
+.msg.a .src + .more, .msg.a .more { display: inline-flex; }

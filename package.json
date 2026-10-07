@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "description": "MathInfo 9 H2H — platformă pentru clasa a IX-a",
-  "scripts": { "start": "node server/server.js", "test": "node server/test.js" },
+  "scripts": { "start": "node server/server.js", "test": "node server/test-ai.js && node server/test-tutor.js && node server/test-stream.js" },
   "engines": { "node": ">=20" },
   "dependencies": { "@libsql/client": "^0.18.0" }
 }

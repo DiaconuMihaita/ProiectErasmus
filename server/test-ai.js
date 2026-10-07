@@ -1,5 +1,6 @@
 /* Teste pentru AI fără rețea: node server/test-ai.js  (Gemini este simulat cu un fetch fals) */
 process.env.GEMINI_API_KEY = 'test-key';
+process.env.AI_VERIFY = 'always';
 const ai = require('../lib/ai.js');
 const { facts } = require('../lib/mathtools.js');
 let fails = 0;
@@ -110,6 +111,25 @@ const DRAFT = '**Date și ce se cere** ... Răspuns final: x ∈ {2, 3}';
   calls = []; script = [{ text: DRAFT }, { text: 'VERDICT: OK' }];
   await ai.ask({ messages: msgs('x'), lang: 'ro', depth: 'ceva-necunoscut' });
   ok(/DETALIAT/.test(calls[0].systemInstruction.parts[0].text), 'nivel necunoscut → detaliat');
+
+  // 9h) mod „auto”: întrebare conceptuală → un singur apel, fără instrumente, gândire mică
+  process.env.AI_VERIFY = 'auto'; calls = []; script = [{ text: DRAFT }];
+  r = await ai.ask({ messages: msgs('Ce este un vector?'), lang: 'ro' });
+  ok(calls.length === 1 && !calls[0].tools && r.src === 'draft' && calls[0].generationConfig.thinkingConfig.thinkingBudget === 1024, 'auto: conceptual → 1 apel, fără cod, gândire 1024');
+  // întrebare cu calcule → instrumente + verificare
+  calls = []; script = [{ text: DRAFT }, { text: 'VERDICT: OK' }];
+  r = await ai.ask({ messages: msgs('Calculează suma 1+2+...+50'), lang: 'ro' });
+  ok(calls.length === 2 && calls[0].tools && r.src === 'verified', 'auto: cu calcule → cod + verificare');
+  // nivel: gândire după detaliu
+  calls = []; script = [{ text: DRAFT }]; await ai.ask({ messages: msgs('Ce este o mulțime?'), lang: 'ro', depth: 'short' });
+  ok(calls[0].generationConfig.thinkingConfig.thinkingBudget === 0, 'short: fără gândire');
+  calls = []; script = [{ text: DRAFT }]; await ai.ask({ messages: msgs('Ce este o mulțime?'), lang: 'ro', depth: 'deep' });
+  ok(calls[0].generationConfig.thinkingConfig.thinkingBudget === 4096, 'deep: gândire 4096');
+  // onDraft vine înainte de verdict
+  const order = []; calls = []; script = [{ text: DRAFT }, { text: 'VERDICT: OK' }];
+  r = await ai.ask({ messages: msgs('Calculează 2+2'), lang: 'ro', onDraft: t => order.push('draft:' + (calls.length)) });
+  ok(order.length === 1 && order[0] === 'draft:1' && r.src === 'verified', 'onDraft este apelat după primul apel, înainte de verificare');
+  process.env.AI_VERIFY = 'always';
 
   // 10) verificarea întrebărilor generate
   const qs = [

@@ -39,8 +39,9 @@ Vercel nu are disc persistent, de aceea baza de date este externă (Turso, gratu
 | `TEACHER_CODE` | un cod secret pentru conturile de profesor (**obligatoriu de schimbat**) |
 | `GEMINI_API_KEY` | cheia Google AI Studio (opțional; fără ea AI-ul răspunde doar din baza locală) |
 | `GEMINI_MODEL` | opțional, implicit `gemini-2.5-flash`; pentru precizie maximă `gemini-2.5-pro` (mai lent, limite mai mici în planul gratuit) |
-| `GEMINI_THINKING` | opțional: bugetul de „gândire” al modelului (implicit `-1` = dinamic; `0` = oprit pe modelele Flash) |
-| `AI_VERIFY` | `off` oprește a doua trecere de verificare (implicit pornită; răspunsul durează mai mult, dar e mai corect) |
+| `GEMINI_THINKING` | opțional: bugetul de „gândire” (implicit automat: 0 la „Scurt”, 1024 la „Detaliat”, 4096 la „Aprofundat”; `-1` = dinamic, nelimitat) |
+| `AI_VERIFY` | `auto` (implicit: verificare doar la întrebări cu calcule/cod), `always`, sau `off` |
+| `GEMINI_FALLBACK_MODELS` | modele de rezervă când cel principal e supraîncărcat (implicit `gemini-2.5-flash,gemini-2.0-flash,gemini-2.5-flash-lite`) |
 
 **4. Deploy.** Tabelele se creează automat la prima cerere. Intră pe adresa `*.vercel.app`, creează un cont de
 profesor cu `TEACHER_CODE` și ești gata.
@@ -58,7 +59,7 @@ Note:
 - **Teme:** întrebări din bancă (72), scrise de profesor sau generate cu AI; auto-corectare; rezultate pe elev și pe întrebare.
 - **Duel online:** meci rapid sau cameră cu cod.
 - **Lecții:** 22 (10 mate + 12 info) cu formule, exemple și cod C++.
-- **Tutor AI:** calcule exacte locale; restul merge la Gemini cu: calculator exact pe server (rezultate verificate date modelului), execuție de cod, gândire extinsă, lecții relevante ca sursă, structură fixă de răspuns și **a doua trecere de verificare** (răspunsul e marcat „verificat ✓” sau „corectat la verificare”). Întrebările generate pentru teme sunt rezolvate independent de AI și cele cu cheie îndoielnică se elimină.
+- **Tutor AI:** răspunsul **local apare instant** (ecuații, inecuații, progresii, funcții, trigonometrie, cmmdc, baze… cu pași, plus ~30 de explicații cu exemple) și un buton opțional „Explicație detaliată cu AI”. Întrebările fără răspuns local merg la Gemini, cu draftul afișat imediat și verificat în fundal; Gemini primește: calculator exact pe server (rezultate verificate date modelului), execuție de cod, gândire extinsă, lecții relevante ca sursă, structură fixă de răspuns și **a doua trecere de verificare** (răspunsul e marcat „verificat ✓” sau „corectat la verificare”). Întrebările generate pentru teme sunt rezolvate independent de AI și cele cu cheie îndoielnică se elimină.
 
 ## Structură
 
