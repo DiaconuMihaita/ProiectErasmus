@@ -186,7 +186,7 @@ const I18N = (() => {
     [/^(\d+)% corect$/, '$1% correct'], [/^(\d+)V \/ (\d+)$/, '$1W / $2'],
     [/^Clasa creată · cod (\w+)$/, 'Class created · code $1'], [/^Ai intrat în (.+)$/, 'You joined $1'], [/^Bine ai venit, (.+)$/, 'Welcome, $1'],
     [/^Temă predată: (\d+)\/(\d+) · \+(\d+) XP$/, 'Homework submitted: $1/$2 · +$3 XP'],
-    [/^(\d+) întrebări adăugate — verifică-le$/, '$1 questions added — please check them'],
+    [/^(\d+) întrebări adăugate — verifică-le(?: \((\d+) eliminate la verificare\)| \(verificate de AI\))?$/, (m, n, d) => `${n} questions added — please check them` + (d ? ` (${d} removed during verification)` : /verificate/.test(m) ? ' (verified by AI)' : '')],
     [/^Teme \((\d+)\)$/, 'Assignments ($1)'], [/^Elevi \((\d+)\)$/, 'Students ($1)'], [/^(\d+) elevi · (\d+) teme$/, '$1 students · $2 assignments'],
     [/^Profesor: (.+)$/, 'Teacher: $1'], [/^(\d+) predate$/, '$1 submitted'], [/^(\d+) \/ (\d+)$/, '$1 / $2'],
     [/^Recitește lecția „(.+)”$/, (m, t) => 'Re-read the lesson “' + tx(t) + '”'],

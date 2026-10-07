@@ -220,7 +220,7 @@
         const btn = $('#agen'); btn.disabled = true; btn.textContent = 'Se generează…';
         try {
           const r = await API.post('/api/ai/questions', { topic: $('#at').value || (LESSONS.find(l => l.id === $('#al').value) || {}).title || '', n: +$('#an').value, lessonId: $('#al').value || null, lang: I18N.lang });
-          r.questions.forEach(addQ); toast('✓', `${r.questions.length} întrebări adăugate — verifică-le`);
+          r.questions.forEach(addQ); toast('✓', `${r.questions.length} întrebări adăugate — verifică-le` + (r.dropped ? ` (${r.dropped} eliminate la verificare)` : r.verified ? ' (verificate de AI)' : ''));
         } catch (ex) { toast('!', ex.message); } finally { btn.disabled = false; btn.textContent = 'Generează'; }
       };
     }

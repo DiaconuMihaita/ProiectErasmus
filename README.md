@@ -38,7 +38,9 @@ Vercel nu are disc persistent, de aceea baza de date este externă (Turso, gratu
 | `TURSO_AUTH_TOKEN` | tokenul din pasul 1 |
 | `TEACHER_CODE` | un cod secret pentru conturile de profesor (**obligatoriu de schimbat**) |
 | `GEMINI_API_KEY` | cheia Google AI Studio (opțional; fără ea AI-ul răspunde doar din baza locală) |
-| `GEMINI_MODEL` | opțional, implicit `gemini-2.5-flash` |
+| `GEMINI_MODEL` | opțional, implicit `gemini-2.5-flash`; pentru precizie maximă `gemini-2.5-pro` (mai lent, limite mai mici în planul gratuit) |
+| `GEMINI_THINKING` | opțional: bugetul de „gândire” al modelului (implicit `-1` = dinamic; `0` = oprit pe modelele Flash) |
+| `AI_VERIFY` | `off` oprește a doua trecere de verificare (implicit pornită; răspunsul durează mai mult, dar e mai corect) |
 
 **4. Deploy.** Tabelele se creează automat la prima cerere. Intră pe adresa `*.vercel.app`, creează un cont de
 profesor cu `TEACHER_CODE` și ești gata.
@@ -56,7 +58,7 @@ Note:
 - **Teme:** întrebări din bancă (72), scrise de profesor sau generate cu AI; auto-corectare; rezultate pe elev și pe întrebare.
 - **Duel online:** meci rapid sau cameră cu cod.
 - **Lecții:** 22 (10 mate + 12 info) cu formule, exemple și cod C++.
-- **Tutor AI:** calcule exacte locale; restul merge la Gemini, cu lecția aleasă ca context.
+- **Tutor AI:** calcule exacte locale; restul merge la Gemini cu: calculator exact pe server (rezultate verificate date modelului), execuție de cod, gândire extinsă, lecții relevante ca sursă, structură fixă de răspuns și **a doua trecere de verificare** (răspunsul e marcat „verificat ✓” sau „corectat la verificare”). Întrebările generate pentru teme sunt rezolvate independent de AI și cele cu cheie îndoielnică se elimină.
 
 ## Structură
 

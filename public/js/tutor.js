@@ -253,11 +253,11 @@ const Tutor = (() => {
   async function serverAI(history, lessonId) {
     const r = await fetch('/api/ai', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...(API.st.token ? { Authorization: 'Bearer ' + API.st.token } : {}) },
-      body: JSON.stringify({ messages: history.slice(-12), lessonId: lessonId || null, lang: I18N.lang }), signal: AbortSignal.timeout(50000)
+      body: JSON.stringify({ messages: history.slice(-12), lessonId: lessonId || null, lang: I18N.lang }), signal: AbortSignal.timeout(62000)
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(I18N.tx(j.error || (T('eroare ', 'error ') + r.status)));
-    return j.text;
+    return j;
   }
 
   /* Ordine: calcul exact local → AI server → cheie proprie Gemini → bază locală → lecția curentă */
@@ -268,7 +268,11 @@ const Tutor = (() => {
     if (!exact) {
       let note = '';
       if (opts.serverAI) {
-        try { return { text: await serverAI(history, opts.lessonId), src: 'AI' + (opts.lessonId ? T(' · cu lecția', ' · with the lesson') : '') }; }
+        try {
+          const j = await serverAI(history, opts.lessonId);
+          const tag = j.src === 'verified' ? T(' · verificat ✓', ' · verified ✓') : j.src === 'corrected' ? T(' · corectat la verificare ✓', ' · corrected on review ✓') : '';
+          return { text: j.text, src: 'AI' + tag + (opts.lessonId ? T(' · cu lecția', ' · with the lesson') : '') };
+        }
         catch (e) { note = e.message; }
       }
       if (settings.key) {
