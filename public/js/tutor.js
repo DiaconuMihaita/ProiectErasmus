@@ -2,7 +2,17 @@
    Bilingv: T(ro, en) alege textul după limba curentă. */
 
 const Tutor = (() => {
-  const EN = () => I18N.lang === 'en';
+  let qlang = null;                                   // limba întrebării curente (detectată), altfel limba interfeței
+  const EN = () => (qlang || I18N.lang) === 'en';
+  const EN_W = new Set(['what', 'whats', 'how', 'the', 'an', 'of', 'to', 'explain', 'does', 'why', 'when', 'which', 'can', 'me', 'my', 'give', 'show', 'solve', 'find', 'between', 'and', 'with', 'for', 'this', 'that', 'you', 'there', 'about', 'tell', 'number', 'numbers', 'equation', 'write', 'program', 'code', 'work', 'works', 'mean', 'means', 'difference', 'example', 'please', 'help', 'is', 'are', 'do']);
+  const RO_W = new Set(['ce', 'cum', 'care', 'sunt', 'este', 'si', 'de', 'la', 'cu', 'pentru', 'explica', 'imi', 'mie', 'cat', 'cand', 'unde', 'fac', 'face', 'pot', 'poti', 'sau', 'nu', 'vreau', 'rezolva', 'arata', 'dintre', 'despre', 'numar', 'numere', 'ecuatia', 'scrie', 'program', 'cod', 'functioneaza', 'inseamna', 'diferenta', 'exemplu', 'te', 'rog', 'ajutor', 'un', 'o', 'pe', 'din', 'ai', 'am', 'mai', 'ma', 'sa']);
+  /** Detectează limba întrebării (cuvinte funcționale); la egalitate se folosește limba interfeței. */
+  function detectLang(t) {
+    const words = t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/[^a-z]+/).filter(Boolean);
+    let e = 0, r = 0; for (const w of words) { if (EN_W.has(w)) e++; if (RO_W.has(w)) r++; }
+    if (/[ăâîșț]/i.test(t)) r += 2;
+    return e > r ? 'en' : r > e ? 'ro' : null;
+  }
   const T = (ro, en) => EN() ? en : ro;
   const strip = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -216,12 +226,12 @@ const Tutor = (() => {
 
     // bază de cunoștințe (cuvinte-cheie RO + EN)
     let best = null, bestScore = 0;
-    for (const e of KB) {
+    KB.forEach((e, i) => {
       let sc = 0;
-      for (const k of (EN() && e.kEn ? e.kEn : e.k)) { const kk = strip(k); if (t.includes(kk.trim())) sc += kk.trim().length; }
-      if (sc > bestScore) { bestScore = sc; best = e; }
-    }
-    if (best && bestScore >= 2) { kbHit = true; return best.a; }
+      for (const k of (EN() && typeof KB_EN !== 'undefined' && KB_EN[i] ? KB_EN[i].k : e.k)) { const kk = strip(k); if (t.includes(kk.trim())) sc += kk.trim().length; }
+      if (sc > bestScore) { bestScore = sc; best = i; }
+    });
+    if (best !== null && bestScore >= 2) { kbHit = true; return EN() && typeof KB_EN !== 'undefined' && KB_EN[best] ? KB_EN[best].a : KB[best].a; }
     return null;
   }
 
@@ -253,7 +263,7 @@ const Tutor = (() => {
   async function serverAI(history, lessonId) {
     const r = await fetch('/api/ai', {
       method: 'POST', headers: { 'Content-Type': 'application/json', ...(API.st.token ? { Authorization: 'Bearer ' + API.st.token } : {}) },
-      body: JSON.stringify({ messages: history.slice(-12), lessonId: lessonId || null, lang: I18N.lang }), signal: AbortSignal.timeout(62000)
+      body: JSON.stringify({ messages: history.slice(-12), lessonId: lessonId || null, lang: EN() ? 'en' : 'ro' }), signal: AbortSignal.timeout(62000)
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(I18N.tx(j.error || (T('eroare ', 'error ') + r.status)));
@@ -263,6 +273,7 @@ const Tutor = (() => {
   /* Ordine: calcul exact local → AI server → cheie proprie Gemini → bază locală → lecția curentă */
   async function reply(history, settings, opts = {}) {
     const last = history[history.length - 1].t;
+    qlang = detectLang(last);
     const loc = local(last);
     const exact = !!loc && !kbHit;
     if (!exact) {

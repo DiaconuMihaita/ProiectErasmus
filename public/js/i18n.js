@@ -263,7 +263,6 @@ const I18N = (() => {
     if (lang !== 'en' || typeof LESSONS_EN === 'undefined') return;
     for (const l of LESSONS) { const e = LESSONS_EN[l.id]; if (e) Object.assign(l, e); }
     QUESTIONS.forEach((q, i) => { const e = QUESTIONS_EN[i]; if (e) { q.q = e.q; if (e.o) q.o = e.o; q.e = e.e; } });
-    KB.forEach((k, i) => { const e = KB_EN[i]; if (e) { k.a = e.a; k.kEn = e.k; } });
     if (typeof BADGES !== 'undefined') BADGES.forEach(b => { b.name = tx(b.name); b.desc = tx(b.desc); });
   }
 

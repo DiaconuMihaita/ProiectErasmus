@@ -17,9 +17,9 @@ ok(facts('Explică-mi ce este o funcție') === '', 'facts: nimic de calculat →
 ok(/fără soluții|nu are rădăcini/.test(facts('x^2 + 2x + 5 = 0')), 'facts: Δ<0');
 
 // ---- fetch simulat
-let calls = [], script = [];
+let calls = [], urls = [], script = [];
 global.fetch = async (url, opts) => {
-  const body = JSON.parse(opts.body); calls.push(body);
+  const body = JSON.parse(opts.body); calls.push(body); urls.push(url);
   const next = script.shift();
   if (!next) throw new Error('apel neașteptat');
   if (next.status) return { ok: false, status: next.status, json: async () => ({ error: { message: next.msg || 'x' } }) };
@@ -77,6 +77,25 @@ const DRAFT = '**Date și ce se cere** ... Răspuns final: x ∈ {2, 3}';
 
   // 9) AI oprit
   AIKEY: { const k = process.env.GEMINI_API_KEY; process.env.GEMINI_API_KEY = ''; let err; try { await ai.ask({ messages: msgs('x'), lang: 'ro' }); } catch (e) { err = e; } process.env.GEMINI_API_KEY = k; ok(err && err.code === 503, 'fără cheie → 503'); }
+
+  // 9b) model supraîncărcat (503 de două ori) → trece pe modelul de rezervă
+  calls = []; urls = []; script = [{ status: 503, msg: 'high demand' }, { status: 503, msg: 'high demand' }, { text: DRAFT }, { text: 'VERDICT: OK' }];
+  r = await ai.ask({ messages: msgs('întrebare'), lang: 'ro' });
+  ok(r.text === DRAFT && /gemini-2\.5-flash:/.test(urls[0]) && /gemini-2\.0-flash:/.test(urls[2]), '503 repetat pe modelul principal → folosește modelul de rezervă');
+  // 9c) limită depășită (429) → trece imediat pe următorul model
+  urls = []; script = [{ status: 429, msg: 'quota' }, { text: DRAFT }, { text: 'VERDICT: OK' }];
+  r = await ai.ask({ messages: msgs('întrebare'), lang: 'ro' });
+  ok(r.text === DRAFT && urls.length === 3 && /gemini-2\.0-flash:/.test(urls[1]), '429 → următorul model fără pauză');
+  // 9d) un 503 trecător se reîncearcă pe același model
+  urls = []; script = [{ status: 503, msg: 'high demand' }, { text: DRAFT }, { text: 'VERDICT: OK' }];
+  r = await ai.ask({ messages: msgs('întrebare'), lang: 'ro' });
+  ok(r.text === DRAFT && /gemini-2\.5-flash:/.test(urls[1]), '503 trecător → reîncercare pe același model');
+  // 9e) cheie respinsă (403) → eroare clară, fără a încerca alte modele
+  urls = []; script = [{ status: 403, msg: 'API key invalid' }];
+  { let err; try { await ai.ask({ messages: msgs('x'), lang: 'ro' }); } catch (e) { err = e; } ok(err && err.code === 502 && /API key invalid/.test(err.message) && urls.length === 1, '403 → eroare imediată'); }
+  // 9f) toate modelele eșuează → eroare cu motivul
+  script = []; for (let i = 0; i < 12; i++) script.push({ status: 503, msg: 'high demand' });
+  { let err; try { await ai.ask({ messages: msgs('x'), lang: 'ro' }); } catch (e) { err = e; } ok(err && /high demand/.test(err.message), 'toate modelele supraîncărcate → eroare cu motivul'); }
 
   // 10) verificarea întrebărilor generate
   const qs = [

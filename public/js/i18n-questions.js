@@ -111,7 +111,7 @@ const KB_EN = [
     a: '**An array in C++:** `int v[100];` — the indices go from **0** to n−1.\n```\nint mx = v[0];\nfor (int i = 1; i < n; i++)\n    if (v[i] > mx) mx = v[i];\n```' },
   { k: ['euclid', 'gcd', 'greatest common divisor'],
     a: "**Euclid's algorithm:**\n```\nwhile (b != 0) { int r = a % b; a = b; b = r; }\n// gcd = a\n```\nYou can type `gcd 48 36` directly and I will show the steps." },
-  { k: ['prime', 'prime number', 'eratosthenes', 'sieve'],
+  { k: ['prime', 'prime number', 'prim number', 'primes', 'eratosthenes', 'sieve'],
     a: '**A prime number:** n > 1 with exactly two divisors (1 and n). Test: check the divisors `d` from 2 while `d * d <= n`.\n**The sieve of Eratosthenes** finds all primes up to n by crossing out the multiples of each prime. Type `97 prime` and I will check it.' },
   { k: ['base 2', 'binary', 'number bases', 'conversion', 'hexadecimal'],
     a: '**10 → 2:** divide by 2 and read the remainders from bottom to top. **2 → 10:** add the powers of 2 where the digit is 1.\nType `binary 25` or `decimal 11001` and I will show the steps.' },
